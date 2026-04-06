@@ -1,0 +1,233 @@
+---
+title: "Error Reference"
+description: "Every error code, what it means, and how to fix it"
+---
+
+All errors from the UBN BaaS API follow the [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807) standard — a consistent format used across every endpoint. Every error includes a human-readable explanation you can read while debugging, and a machine-readable `code` field your application can branch on.
+
+For the full shape of an error response, see [Error Response Format](/api-reference/overview#error-response-format-rfc-7807) in the API overview.
+
+<Info>
+  Always log the `correlationId` from every error response. When you contact support, including the `correlationId` is the single fastest way to find your request in our systems — it can cut investigation time from hours to minutes.
+</Info>
+
+---
+
+## HTTP Status Codes
+
+The HTTP status code gives you the first, broad signal about what went wrong. Read the `code` field in the body for the specific cause.
+
+<Tabs>
+  <Tab title="2xx Success">
+    | Status | Meaning |
+    |--------|---------|
+    | `200 OK` | The request succeeded and a response body is returned. Used for GET requests and most updates. |
+    | `201 Created` | A new resource was created. For example: a new virtual account, a new API key. The created resource is returned in the `data` field. |
+    | `202 Accepted` | The request was accepted but processing happens asynchronously. The operation is in progress — subscribe to the relevant webhook event to know when it completes. Used for payments and KYB review. |
+    | `204 No Content` | The request succeeded but there is nothing to return. Used for DELETE operations such as removing a webhook endpoint. |
+  </Tab>
+  <Tab title="4xx Client Errors">
+    These errors mean something about your request is wrong. You need to fix your request — retrying without a change will not help.
+
+    | Status | Meaning |
+    |--------|---------|
+    | `400 Bad Request` | Your request structure is malformed. Check that you are sending valid JSON and that all required fields are present. |
+    | `401 Unauthorized` | Your API key is missing, malformed, or has been revoked. Check the `Authorization` header and verify the key is active in your dashboard. |
+    | `402 Payment Required` | You have exceeded your API quota for the current billing period. Check the `X-Quota-Reset` header to see when your quota resets, or upgrade your plan. |
+    | `403 Forbidden` | You are authenticated but do not have permission for this action. Common causes: wrong environment key, insufficient role for your account. |
+    | `404 Not Found` | The resource you requested does not exist. Check the ID or account number in your request. |
+    | `409 Conflict` | The request conflicts with the current state. Caused by duplicate idempotency keys used for different requests, or attempting to create a resource that already exists. |
+    | `413 Payload Too Large` | Your file upload exceeds the 10 MB limit. Compress the file or split it across multiple requests. |
+    | `415 Unsupported Media Type` | The file format you uploaded is not accepted. Check the endpoint documentation for the list of accepted MIME types. |
+    | `422 Unprocessable Entity` | The request format is valid, but the data fails a business rule. For example: insufficient balance, expired OTP, name mismatch. The `code` field will tell you exactly which rule failed. |
+    | `429 Too Many Requests` | You are sending requests faster than your rate limit allows. Check the `Retry-After` header and wait that many seconds before retrying. See [Rate Limits](/security/rate-limits). |
+  </Tab>
+  <Tab title="5xx Server Errors">
+    These errors originate on our side. You do not need to change your request — but you should retry with backoff.
+
+    | Status | Meaning |
+    |--------|---------|
+    | `503 Service Unavailable` | A circuit breaker has opened to protect a downstream service. The `X-Circuit-Breaker-Open: true` header will be present. Wait 30 seconds, then retry. See [Circuit Breaker](#circuit-breaker) below. |
+  </Tab>
+</Tabs>
+
+---
+
+## Error Codes
+
+Use the `code` field in the error response body to handle specific errors programmatically. The table below covers every code the API can return, what it means, and the exact fix.
+
+<Note>
+  Error codes are stable — we will not rename or remove a code without a deprecation period. You can safely use them in `switch` statements and conditional logic.
+</Note>
+
+### Onboarding and Identity
+
+| Code | HTTP Status | What happened | How to fix |
+|------|-------------|---------------|------------|
+| `NDPR_CONSENT_REQUIRED` | 422 | The `ndprConsent` field in the registration request is `false` or missing. The Nigeria Data Protection Regulation requires explicit consent before we can process personal data. | Set `ndprConsent: true` in the registration request body. |
+| `FREE_EMAIL_REJECTED` | 422 | You used a free consumer email address (such as `@gmail.com`, `@yahoo.com`, `@outlook.com`). Only corporate domain email addresses are accepted. | Register with your company domain email address (for example `yourname@yourcompany.com`). |
+| `CODE_EXPIRED` | 400 | The OTP (one-time password) you submitted has expired. OTPs are valid for 10 minutes. | Re-register or use the resend option to receive a fresh code, then submit the new code. |
+| `CODE_ALREADY_USED` | 409 | This OTP has already been submitted successfully. | Check whether your email address is already verified by attempting to log in. If it is, proceed to the next onboarding step. |
+| `MISSING_DOCS` | 422 | Your KYB (Know Your Business) document submission is incomplete. Required documents have not been uploaded. | Check the [KYB Documents](/onboarding/kyb-documents) guide for the full list of required documents, then upload all missing files. |
+| `NAME_MISMATCH` | 422 | The name in your registration form does not match the name on record for the BVN or NIN you provided. | Compare the name on your form exactly against the name registered with NIMC (for NIN) or the CBN (for BVN). Correct any spelling differences, name order differences, or missing middle names. |
+
+### Authentication and Authorisation
+
+| Code | HTTP Status | What happened | How to fix |
+|------|-------------|---------------|------------|
+| `ENVIRONMENT_MISMATCH` | 403 | You used a sandbox key (`ubn_sb_`) against the production URL, or a production key (`ubn_pk_`) against the sandbox URL. | Check your base URL and key prefix. Sandbox keys must only be used with `https://dev-api-partner.onecluster.co`. Production keys must only be used with `https://api-partner.onecluster.co`. |
+| `INVALID_SIGNATURE` | 401 | The HMAC-SHA256 signature in the `X-Signature` header does not match what we computed from your request body. | Re-read the [Signing Requests](/api-reference/authentication#signing-requests) guide. Most common causes: using the API key instead of the signing secret, or your HTTP client re-serialising the JSON after you signed it. |
+
+### Payments and Accounts
+
+| Code | HTTP Status | What happened | How to fix |
+|------|-------------|---------------|------------|
+| `INSUFFICIENT_FUNDS` | 422 | The source account does not have enough balance to cover the transfer amount plus any applicable fees. | Top up the source account, or reduce the transfer amount. The `detail` field in the error includes the current balance and the minimum required amount. |
+| `ACCOUNT_NOT_FOUND` | 404 | The account number you specified does not exist in the system. | Double-check the account number — a transposed digit is a common cause. If you are referencing a recently created account, wait a few seconds and retry (account creation is near-instant but not instantaneous). |
+
+### Quota and Rate Limiting
+
+| Code | HTTP Status | What happened | How to fix |
+|------|-------------|---------------|------------|
+| `QUOTA_EXHAUSTED` | 402 | Your plan's API call quota for this billing period has been fully used. | Check the `X-Quota-Reset` header to find the Unix timestamp when your quota resets. If you need more calls sooner, contact your UBN account manager to upgrade your plan. |
+| `RATE_LIMITED` | 429 | You are sending too many requests too quickly. | Wait for the number of seconds specified in the `Retry-After` response header before sending another request. Implement exponential backoff for automated retries — see [Retry Strategy](#retry-strategy) below. |
+
+### Infrastructure and Idempotency
+
+| Code | HTTP Status | What happened | How to fix |
+|------|-------------|---------------|------------|
+| `CIRCUIT_BREAKER_OPEN` | 503 | A downstream service (such as the NIP payment network or an identity bureau) is temporarily unavailable. The circuit breaker has opened to prevent cascading failures. | This is temporary. Wait 30 seconds, then retry. The `X-Circuit-Breaker-Open: true` response header will be absent once the circuit closes. |
+| `IDEMPOTENCY_REPLAY` | 409 | You sent a request with an `X-Idempotency-Key` that was already used for a previous successful request. | This is not always an error — it means your original request succeeded. The response body contains the original result. Check the `X-Idempotency-Replayed: true` response header to confirm it is a replay. See [Idempotency Keys](/api-reference/authentication#idempotency-keys). |
+
+---
+
+## Retry Strategy
+
+For `429 Rate Limited` and `503 Circuit Breaker Open` errors, use **exponential backoff with jitter**: wait progressively longer between each retry attempt, and add a small random delay to avoid multiple clients hammering the API at the same time.
+
+The recommended sequence: 1 second, then 2 seconds, then 4 seconds, then 8 seconds, then give up and surface the error to the caller.
+
+<CodeGroup>
+
+```javascript JavaScript
+async function fetchWithRetry(url, options, maxRetries = 4) {
+  const retryableStatuses = new Set([429, 503]);
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    if (!retryableStatuses.has(response.status)) {
+      // Success, or a non-retryable error — return immediately
+      return response;
+    }
+
+    if (attempt === maxRetries) {
+      // We have exhausted our retries
+      return response;
+    }
+
+    // Exponential backoff: 1s, 2s, 4s, 8s
+    const backoffMs = Math.pow(2, attempt) * 1000;
+    // Add up to 500ms of random jitter to avoid thundering herd
+    const jitterMs = Math.random() * 500;
+    const waitMs = backoffMs + jitterMs;
+
+    console.warn(
+      `Request failed with ${response.status}. Retrying in ${Math.round(waitMs)}ms ` +
+      `(attempt ${attempt + 1} of ${maxRetries})...`
+    );
+
+    await new Promise(resolve => setTimeout(resolve, waitMs));
+  }
+}
+
+// Usage
+const response = await fetchWithRetry(
+  'https://dev-api-partner.onecluster.co/api/v1/accounts',
+  {
+    headers: {
+      'Authorization': `ApiKey ${process.env.UBN_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  }
+);
+```
+
+```python Python
+import time
+import random
+import requests
+
+def fetch_with_retry(url: str, method: str = 'GET', max_retries: int = 4, **kwargs):
+    retryable_statuses = {429, 503}
+
+    for attempt in range(max_retries + 1):
+        response = requests.request(method, url, **kwargs)
+
+        if response.status_code not in retryable_statuses:
+            # Success, or a non-retryable error — return immediately
+            return response
+
+        if attempt == max_retries:
+            # We have exhausted our retries
+            return response
+
+        # Exponential backoff: 1s, 2s, 4s, 8s
+        backoff_s = (2 ** attempt)
+        # Add up to 0.5s of random jitter
+        jitter_s = random.random() * 0.5
+        wait_s = backoff_s + jitter_s
+
+        print(
+            f"Request failed with {response.status_code}. "
+            f"Retrying in {wait_s:.2f}s (attempt {attempt + 1} of {max_retries})..."
+        )
+        time.sleep(wait_s)
+
+
+# Usage
+response = fetch_with_retry(
+    'https://dev-api-partner.onecluster.co/api/v1/accounts',
+    headers={
+        'Authorization': f"ApiKey {os.environ['UBN_API_KEY']}",
+        'Content-Type': 'application/json',
+    }
+)
+```
+
+</CodeGroup>
+
+<Tip>
+  For `429` errors, check the `Retry-After` response header first — it tells you the exact number of seconds to wait. Use that value instead of the exponential backoff if it is present, as it reflects the actual rate limit window rather than an estimate.
+</Tip>
+
+---
+
+## Circuit Breaker
+
+The circuit breaker protects the platform when a downstream service (the NIP payment network, NIBSS, or an identity verification bureau) experiences degraded performance. When too many requests to a downstream service fail within a short window, the circuit breaker "opens" and all requests that would reach that service are rejected immediately — rather than queuing and timing out.
+
+This is a safety mechanism, not a sign that your integration is broken. When the circuit is open:
+
+1. The response status is `503` with code `CIRCUIT_BREAKER_OPEN`.
+2. The `X-Circuit-Breaker-Open: true` header is present in the response.
+3. Wait **30 seconds** before retrying.
+4. The circuit closes automatically once the downstream service recovers.
+
+You can check real-time service status at [dev-api-partner.onecluster.co/status](https://dev-api-partner.onecluster.co/status).
+
+---
+
+## Getting Help
+
+If you cannot resolve an error using this reference, contact support at [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng). Include the following in your message to get the fastest response:
+
+- The `correlationId` from the error response body
+- The endpoint you were calling
+- The error `code` and HTTP status
+- A sanitised version of your request (remove API keys, account numbers, and personal data before sharing)
+
+<Info>
+  The `correlationId` is the single most important piece of information you can provide. It points directly to your request in our logs, which allows us to see exactly what happened — including what we received, what was checked, and what failed — without needing to reproduce the issue.
+</Info>

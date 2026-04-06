@@ -1,0 +1,183 @@
+---
+title: "Onboarding Overview"
+description: "Everything you need to do before your first live API call"
+---
+
+<Info>
+  If you just want to explore the API without going through the full onboarding process, you can make unauthenticated calls in the sandbox to see response shapes. But to create accounts, move money, or go live, you must complete onboarding.
+</Info>
+
+## What is onboarding and why does it exist?
+
+Onboarding is the process of registering your company, verifying your identity, and getting approved to use the UBN BaaS platform.
+
+It exists because of regulatory requirements set by the **Central Bank of Nigeria (CBN)** — the government body that oversees all banks and financial services in Nigeria. The CBN requires every Banking as a Service (BaaS) provider to verify the identity and legitimacy of every company it works with before allowing them to move real money. This process is called **partner due diligence**.
+
+In plain terms: before Union Bank lets your application touch real customer funds, we need to know your company is real, legally registered in Nigeria, and operated by identifiable people. This is not about doubting you — it is the law, and it protects your customers as much as it protects the bank.
+
+The full process takes between **2 and 7 business days**, most of which is waiting time on our end. Your active effort is less than an hour.
+
+---
+
+## Your onboarding journey
+
+<Steps>
+  <Step title="Register Your Company (5 minutes)">
+    Create your partner account at [dev-ubn-ui.onecluster.co/auth/signup](https://dev-ubn-ui.onecluster.co/auth/signup). You will provide your company name, a corporate email address, your Union Bank account number, and create a password. Once you click submit, your account is created and a verification email is sent to you immediately.
+
+    [Go to Step 1: Register →](/onboarding/register)
+  </Step>
+
+  <Step title="Verify Your Email (2 minutes)">
+    Check your inbox for an email from UBN BaaS. It contains a 6-digit **OTP (One-Time Password)** — a code that works only once. Submit that code through the API or the portal to confirm you have access to the email address you registered with.
+
+    [Go to Step 2: Verify Email →](/onboarding/verify-email)
+  </Step>
+
+  <Step title="Submit KYB Documents (15–30 minutes to gather and upload)">
+    Upload your company's compliance documents: your Certificate of Incorporation, a director's government-issued ID, and a recent utility bill. This process is called **KYB (Know Your Business)**. Gathering your documents is the longest step — the actual upload takes a few minutes.
+
+    [Go to Step 3: Submit KYB Documents →](/onboarding/kyb-documents)
+  </Step>
+
+  <Step title="KYC Verification (Automated — usually instant)">
+    After a UBN compliance officer reviews and approves your documents, our system automatically runs identity checks on your directors using the national databases of **NIBSS** (Nigeria Interbank Settlement System) and **NIMC** (National Identity Management Commission). This step requires no action from you.
+
+    [Go to Step 4: KYC Verification →](/onboarding/kyc-verification)
+  </Step>
+
+  <Step title="Get Your API Keys (Instant on approval)">
+    When KYC passes, your **sandbox API key** is generated automatically and emailed to you. An API key is a unique secret code that identifies your application when it calls our API. You can start building and testing immediately in the sandbox environment — no real money is involved.
+
+    [Go to Step 5: Get API Keys →](/onboarding/api-keys)
+  </Step>
+
+  <Step title="Go Live — Request Production Access (2–5 business days review)">
+    Once you have tested thoroughly in the sandbox, submit a production access request. Our team reviews your integration, security setup, and business justification. When approved, you receive a production API key and your application can process real transactions.
+
+    [Go to Step 6: Go Live →](/onboarding/go-live)
+  </Step>
+</Steps>
+
+---
+
+## What you will need — prepare this upfront
+
+Gathering your documents before you start will make the process much faster. Here is everything you need:
+
+<AccordionGroup>
+  <Accordion title="Business information">
+    <Check>**Corporate email address** — an email on your company's own domain (for example, `cto@techfin.ng`). Free email providers like Gmail, Yahoo, and Outlook are not accepted. If you do not have a corporate email yet, ask your IT team or set one up through Google Workspace or Microsoft 365 before you begin.</Check>
+    <Check>**Company CAC registration number** — your **RC number** in the format `RC-XXXXXXX`. This was issued when your company was registered with the **Corporate Affairs Commission (CAC)**, the Nigerian government body that registers businesses. You will find it on your Certificate of Incorporation.</Check>
+    <Check>**UBN bank account number** — an existing Union Bank of Nigeria account that belongs to your company. This links your BaaS account to your banking relationship with Union Bank.</Check>
+  </Accordion>
+
+  <Accordion title="Documents to upload (Steps 3 and 4)">
+    <Check>**Certificate of Incorporation (PDF, max 10MB)** — issued by the CAC when your company was registered. It must clearly show your RC number and company name.</Check>
+    <Check>**Director's government-issued ID (PDF or JPG, max 10MB)** — a National ID card, International Passport, or Driver's Licence for at least one company director.</Check>
+    <Check>**Recent utility bill (PDF, max 10MB)** — a bill dated within the last 3 months. This must show your company's registered address. Acceptable examples: PHCN/electricity bill, water bill, waste management bill.</Check>
+    <Check>**Director's BVN (Bank Verification Number)** — an 11-digit number tied to a director's fingerprints and bank accounts in Nigeria. This is used for the automated identity check in Step 4. You do not upload this as a document — you provide it during registration.</Check>
+    <Check>**Director's NIN (National Identification Number)** — an 11-digit number issued by NIMC. Used alongside BVN for identity verification in Step 4.</Check>
+  </Accordion>
+
+  <Accordion title="Optional but recommended">
+    <Check>**Memorandum and Articles of Association (PDF, max 10MB)** — a legal document that describes your company's purpose and rules. Providing it is optional but often speeds up the KYB review.</Check>
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Scan your documents before you start registration. A clear, properly scanned document with all four corners visible and no glare or blur will pass review much faster than a blurry phone photo. Most rejections are caused by poor document quality, not missing documents.
+</Tip>
+
+---
+
+## Sandbox vs Production
+
+You will work in two separate environments during and after onboarding. Understanding the difference matters.
+
+<CardGroup cols={2}>
+  <Card title="Sandbox" icon="flask">
+    **Free. Instant access on KYB approval. No real money.**
+
+    The sandbox is a testing environment that behaves exactly like the production system. You can create virtual accounts, simulate payments, trigger webhooks, and test failure scenarios — but no real money moves and no real customer accounts are created.
+
+    Use the sandbox to build and test your entire integration before going live. There is no time limit and no usage cost.
+
+    Sandbox API keys start with `ubn_sb_`.
+
+    Base URL: `https://dev-api-partner.onecluster.co`
+  </Card>
+
+  <Card title="Production" icon="building-columns">
+    **Requires separate approval. Real money. Real customers.**
+
+    The production environment is the live banking system. API calls here create real bank accounts, move real money, and affect real customers. You need to complete Steps 1–5 and then submit a separate production access request (Step 6) before you can use production.
+
+    Production access is reviewed by the UBN BaaS team and typically takes 2–5 business days.
+
+    Production API keys start with `ubn_pk_`.
+
+    Base URL: `https://api-partner.onecluster.co`
+  </Card>
+</CardGroup>
+
+<Warning>
+  Never use a production API key in your test or development code. If a test creates a payment with a production key, a real bank transfer happens. Always confirm which environment you are pointing at before running any code.
+</Warning>
+
+---
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="How long does full onboarding take?">
+    The total elapsed time from registration to production access is typically **3–8 business days**, depending on document quality and review queue length.
+
+    Here is how that breaks down:
+
+    | Step | Your time | Waiting time |
+    |------|-----------|--------------|
+    | Register + verify email | ~10 minutes | Instant |
+    | Upload KYB documents | ~20 minutes | Up to 2 business days |
+    | KYC verification | None (automated) | Usually instant after KYB approval |
+    | Sandbox access | None | Instant on KYC pass |
+    | Production access review | ~30 minutes to prepare | 2–5 business days |
+
+    You can use the sandbox immediately after KYB approval, so you do not have to wait for production approval before you start building.
+  </Accordion>
+
+  <Accordion title="What if my documents are rejected?">
+    If your KYB documents are rejected, you will receive an email from `baas-support@unionbank.ng` explaining exactly which document was rejected and why. Common reasons include:
+
+    - Document is blurry or partially cut off
+    - Utility bill is older than 3 months
+    - Company name on the Certificate of Incorporation does not exactly match the name you registered with
+    - Document appears to have been altered
+
+    You can re-upload corrected documents through the portal or via the API. There is no limit on the number of resubmissions, but each review cycle takes up to 2 business days.
+
+    If you are unsure why a document was rejected or need help, email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your `partnerId` and we will assist you.
+  </Accordion>
+
+  <Accordion title="Can I use a Gmail or Yahoo email address?">
+    No. The registration form requires a corporate email address — one hosted on a domain your company owns (for example, `name@yourcompany.ng` or `name@yourcompany.com`).
+
+    Free email providers like Gmail, Yahoo, Hotmail, and Outlook are rejected for two reasons. First, they cannot be verified as belonging to a business. Second, CBN compliance requirements specify that partner accounts must be tied to a verifiable business domain.
+
+    If your company does not have a corporate email address yet, you can set one up quickly and affordably through **Google Workspace** (formerly G Suite) or **Microsoft 365**. Both allow you to use your own domain (for example, `yourcompany.ng`) with a familiar email interface.
+  </Accordion>
+
+  <Accordion title="Do I need to be a developer to complete onboarding?">
+    No. Steps 1 through 4 (registration, email verification, document upload, and KYC) can all be completed through the web portal at [dev-api-partner.onecluster.co](https://dev-api-partner.onecluster.co) without writing any code.
+
+    Steps 5 and 6 involve API keys and integration setup, which typically require a developer. If you are a business owner without a technical team, email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) and we will walk you through the process.
+  </Accordion>
+
+  <Accordion title="Can I have multiple team members on one account?">
+    Yes. After your account is approved, you can invite team members from the portal. Each team member gets their own login. API keys are tied to the partner account, not to individual team members.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+Ready to begin? [Start with Step 1: Register your company →](/onboarding/register)

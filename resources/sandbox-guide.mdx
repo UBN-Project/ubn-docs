@@ -1,0 +1,221 @@
+---
+title: "Sandbox Guide"
+description: "Everything you need to know about testing in the sandbox"
+---
+
+The sandbox is where you build. Before you can touch production, every feature in your integration should work correctly in the sandbox. This guide covers everything you need to test with confidence.
+
+## What Is the Sandbox?
+
+The sandbox is a complete copy of the production API that uses **fake money**. Everything works exactly the same way as production — the same endpoints, the same request formats, the same response structures, the same error codes, the same webhook events — but nothing is real.
+
+You can:
+- Create virtual accounts
+- Make transfers between test accounts
+- Verify test BVNs, NINs, and CAC numbers
+- Register and receive webhook notifications
+- Test error scenarios
+
+None of it costs anything. No real money moves. No real identities are verified.
+
+**Sandbox base URL:**
+```
+https://dev-api-partner.onecluster.co
+```
+
+<Info>
+  Your sandbox API key only works with the sandbox base URL. Your production API key only works with the production base URL (`https://api-partner.onecluster.co`). There is no way to mix them up accidentally — the wrong key will receive a `401 Unauthorized` response.
+</Info>
+
+---
+
+## Sandbox Features
+
+<CardGroup cols={2}>
+  <Card title="Same API, same responses" icon="copy">
+    Every endpoint, request format, response schema, and error code is identical to production. Code that works in sandbox works in production — just swap the base URL and key.
+  </Card>
+  <Card title="Fake money" icon="coins">
+    No real transfers happen. Virtual accounts have balances you can manipulate freely. No fees, no charges, no limits on how many test transactions you run.
+  </Card>
+  <Card title="Free to use" icon="gift">
+    Sandbox access is free for all registered partners. There are no costs during development, regardless of how many calls you make.
+  </Card>
+  <Card title="Outbox preview" icon="envelope-open">
+    See the emails and SMS messages we would have sent to your customers — without needing a real email server or phone number.
+  </Card>
+</CardGroup>
+
+### Development Outbox
+
+In production, when a customer completes an action (like a successful transfer), we send them an email or SMS notification. In the sandbox, those notifications go to the **outbox preview** instead of a real inbox.
+
+This means you can test the full notification flow — including email verification during onboarding — without setting up a real email server or using real phone numbers.
+
+```
+GET /dev/outbox-preview
+```
+
+Returns the last 50 emails and SMS messages that would have been sent. Each entry includes the recipient, subject, and full message body. This is particularly useful for grabbing email verification codes during automated testing.
+
+<Tip>
+  In your test automation, call `GET /dev/outbox-preview` after triggering an email verification flow to extract the OTP code programmatically. This lets you write fully automated end-to-end tests without manual steps.
+</Tip>
+
+---
+
+## Test Data Reference
+
+Use the following values when making API calls in the sandbox. These are pre-configured to return predictable, successful responses.
+
+<AccordionGroup>
+  <Accordion title="KYC — BVN Verification">
+    Use any 11-digit number starting with `222`.
+
+    ```
+    22212345678
+    22298765432
+    22200000001
+    ```
+
+    These will always return a successful BVN match. Numbers that do not start with `222` will return a `not found` response — useful for testing your error handling.
+  </Accordion>
+
+  <Accordion title="KYC — NIN Verification">
+    Use any 11-digit number starting with `123`.
+
+    ```
+    12345678901
+    12399999999
+    12300000001
+    ```
+
+    These will always return a successful NIN match. Numbers not starting with `123` return `not found`.
+  </Accordion>
+
+  <Accordion title="KYB — CAC Number">
+    Use `RC-1234567` to get a company that always returns `ACTIVE` status with full director information.
+
+    ```
+    RC-1234567
+    ```
+
+    To test an `INACTIVE` company response, use `RC-9999999`.
+  </Accordion>
+
+  <Accordion title="Payments — Account Enquiry & Transfers">
+    Use the following account details for transfer testing:
+
+    | Field | Value |
+    |---|---|
+    | Account Number | `0123456789` |
+    | Bank Code | `058` (GTBank test instance) |
+    | Account Name | Returns `TEST ACCOUNT USER` |
+
+    This account always returns a valid enquiry response. Transfers to this account are always accepted and complete immediately with a `SUCCESS` status.
+
+    To simulate a failed transfer, use account number `0000000000`.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Do not use real BVN, NIN, or account numbers in the sandbox. The sandbox does not connect to live identity databases, so real numbers will simply return "not found" — but you should still treat identity data with care and avoid putting real PII into test systems.
+</Warning>
+
+---
+
+## Testing Webhooks Locally with ngrok
+
+When you develop locally (on your laptop or a development machine), your application is not accessible from the internet. Our webhook system cannot reach `http://localhost:3000`.
+
+**ngrok** solves this. It creates a temporary, publicly accessible URL that tunnels through to your local machine. Think of it as a temporary doorbell on the internet that rings your local server.
+
+<Steps>
+  <Step title="Install ngrok">
+    ```bash
+    # macOS with Homebrew
+    brew install ngrok
+
+    # Or download directly from https://ngrok.com/download
+    # Available for Windows, macOS, and Linux
+    ```
+
+    Create a free account at [ngrok.com](https://ngrok.com) and authenticate:
+
+    ```bash
+    ngrok config add-authtoken YOUR_NGROK_TOKEN
+    ```
+  </Step>
+
+  <Step title="Start your local server">
+    Make sure your application is running locally. For example, if you are using Node.js:
+
+    ```bash
+    node server.js
+    # Server running on http://localhost:3000
+    ```
+  </Step>
+
+  <Step title="Expose your local server">
+    In a separate terminal window, run:
+
+    ```bash
+    ngrok http 3000
+    ```
+
+    ngrok will print output like:
+
+    ```
+    Session Status    online
+    Forwarding        https://abc123.ngrok.io -> http://localhost:3000
+    ```
+
+    The `https://abc123.ngrok.io` URL is now publicly accessible and forwards to your local server.
+  </Step>
+
+  <Step title="Register the ngrok URL as your webhook endpoint">
+    In the sandbox portal, register your webhook endpoint using the ngrok URL:
+
+    ```
+    https://abc123.ngrok.io/webhooks/ubn
+    ```
+
+    Now when events fire in the sandbox (a transfer completes, an account is credited), the webhook notification will be sent to that URL, which ngrok forwards to your local server.
+  </Step>
+
+  <Step title="Observe incoming events">
+    ngrok also provides a local inspection dashboard at `http://localhost:4040`. Open it in your browser to see every incoming webhook request, the full headers and body, and the response your server returned. You can also replay any request without triggering a new event.
+  </Step>
+</Steps>
+
+<Warning>
+  The ngrok URL changes every time you restart ngrok (on the free plan). When you restart your tunnel, update your webhook URL in the sandbox portal to match the new URL.
+</Warning>
+
+---
+
+## Moving from Sandbox to Production
+
+When your integration is ready, switching to production is a two-step change:
+
+1. **Change the base URL** from `https://dev-api-partner.onecluster.co` to `https://api-partner.onecluster.co`.
+2. **Change your API key** from your sandbox key to your production key (obtained after go-live approval).
+
+No code changes are required. The API is identical between environments.
+
+<Tip>
+  Store your base URL and API key in environment variables from the start. Then switching environments is just a configuration change, not a code deployment.
+</Tip>
+
+---
+
+## Sandbox Limitations
+
+The sandbox is designed to be a faithful replica of production, but there are a few things it cannot do:
+
+| Limitation | Detail |
+|---|---|
+| No real money movement | Transfers are simulated. No actual funds move between real bank accounts. |
+| Email and SMS go to outbox preview | Notifications do not reach real inboxes or phone numbers. Use `GET /dev/outbox-preview` to inspect them. |
+| Some bank codes return test responses only | Not all bank codes available in production are active in the sandbox. Use bank code `058` for reliable test responses. |
+| Transfer settlement is instant | In production, NEFT transfers settle within T+1. In the sandbox, all transfers settle immediately to make testing faster. |

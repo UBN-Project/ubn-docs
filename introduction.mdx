@@ -1,0 +1,101 @@
+---
+title: "Welcome to UBN BaaS"
+description: "Build financial products on Union Bank's infrastructure — virtual accounts, payments, collections, and identity verification, all through one API."
+---
+
+<Note>
+  New here? Start with the [Quickstart guide](/quickstart) — you can make your first API call in under 5 minutes.
+</Note>
+
+## What is Banking as a Service?
+
+Banking as a Service (BaaS) means you can add real banking features to your own app or website — without becoming a bank yourself.
+
+Here is an analogy that makes it concrete: imagine you want to open a restaurant, but building a full commercial kitchen from scratch would take years and cost millions. Instead, you rent space in a shared kitchen that already has everything: the ovens, the health permits, the refrigeration, the suppliers. You bring your recipes, your brand, and your customers — the kitchen handles the infrastructure.
+
+**UBN BaaS is that shared kitchen.** Union Bank holds the banking licence, maintains the core banking systems, and handles the regulatory compliance. You build your product on top — and your customers get real banking features without ever knowing the kitchen exists.
+
+## What you can build
+
+<CardGroup cols={2}>
+  <Card title="Virtual Bank Accounts" icon="building-columns">
+    Open real Nigerian bank accounts (with real account numbers) programmatically for your customers or your business. Accounts are backed by Union Bank and work with every bank in Nigeria.
+  </Card>
+  <Card title="Payments" icon="paper-plane">
+    Send money to any Nigerian bank account in real time over the NIP (Nigeria Instant Payment) network. Automate payroll, vendor payments, customer refunds, and more.
+  </Card>
+  <Card title="Collections" icon="arrow-down-to-bracket">
+    Receive money from customers. Generate unique collection accounts so you always know exactly who paid and how much. Ideal for marketplaces, lending, and savings products.
+  </Card>
+  <Card title="Identity Verification" icon="id-card">
+    Verify your customers are who they say they are. Check BVN (Bank Verification Number), NIN (National Identification Number), and CAC (company registration) through a single API.
+  </Card>
+</CardGroup>
+
+## Who is this platform for?
+
+<Info>
+  You do not need to be a bank or hold a banking licence. You just need a registered Nigerian business and a Union Bank account.
+</Info>
+
+This platform is built for three types of people:
+
+- **Fintech startups** — You want to launch a savings app, a lending product, a wallet, or a neobank. You need real accounts and real payments but you do not want to spend two years getting your own banking licence.
+- **Businesses embedding banking** — You run a marketplace, an e-commerce platform, or a logistics company. You want to pay vendors automatically, collect from customers, or give users their own wallets inside your existing product.
+- **Developers** — You are the engineer or technical lead responsible for building one of the above. This documentation is written for you, but it is also written to be understandable by your CEO or your finance director.
+
+## What would you like to do?
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Make your first API call in 5 minutes. No theory — just a working call right away.
+  </Card>
+  <Card title="Onboarding" icon="clipboard-check" href="/onboarding/overview">
+    Register your company, upload your documents, and get approved to use the platform.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Complete reference for every endpoint: request formats, response formats, and error codes.
+  </Card>
+  <Card title="Products" icon="cubes" href="/products/virtual-accounts">
+    Deep-dive guides for Virtual Accounts, Payments, Collections, KYC, and Webhooks.
+  </Card>
+</CardGroup>
+
+## How it works in 3 steps
+
+<Steps>
+  <Step title="Register and get verified">
+    Create your partner account at [dev-ubn-ui.onecluster.co/auth/signup](https://dev-ubn-ui.onecluster.co/auth/signup). You will provide your company name, a corporate email address, and your Union Bank account number. We will send you a verification email and review your business documents (a process called KYB — Know Your Business). This takes 1 to 3 business days.
+  </Step>
+  <Step title="Test in the Sandbox">
+    Once approved, you receive a sandbox API key. The sandbox is a practice environment that behaves exactly like the real system — but no real money moves. You can create accounts, simulate payments, trigger webhooks, and test edge cases freely. There is no time limit and no cost.
+  </Step>
+  <Step title="Go Live">
+    When you are ready to handle real transactions, submit your go-live request from the dashboard. We review your integration, confirm your security setup, and issue your production keys. Real money starts flowing — and real customers can use your product.
+  </Step>
+</Steps>
+
+<Tip>
+  Most partners spend 1 to 2 weeks in sandbox before going live. The better you test, the smoother your launch. We provide a [Go-Live Checklist](/onboarding/go-live) so nothing gets missed.
+</Tip>
+
+## A note on how these docs are organised
+
+These docs follow a structure designed to match how you will actually use the platform:
+
+| Section | What it covers | Best for |
+|---|---|---|
+| **Getting Started** | Introduction, Quickstart, Key Concepts, Glossary | Everyone — read this first |
+| **Onboarding** | Registration, document upload, KYB, going live | Business owners and compliance leads |
+| **Products** | How each product works, with code examples | Developers building features |
+| **API Reference** | Every endpoint, every field, every error code | Developers during active coding |
+| **Security & Compliance** | Authentication, NDPR, rate limits | Security engineers and CTOs |
+| **Resources** | Sandbox guide, Postman collection, changelog | Developers and QA teams |
+
+<Warning>
+  Never use your production API keys in test code. Production keys connect to the live banking system where real money moves. If a test goes wrong with a production key, a real transaction happens. Always use sandbox keys (they start with `ubn_sb_`) during development.
+</Warning>
+
+---
+
+Ready to begin? [Make your first API call →](/quickstart)

@@ -1,0 +1,119 @@
+---
+title: "NDPR Compliance"
+description: "How we handle personal data and what it means for you"
+---
+
+Both you and Union Bank Nigeria have legal obligations under Nigerian data protection law. This page explains what the law requires, what we do to meet it, and what you must do as a partner.
+
+## What Is NDPR?
+
+The **Nigeria Data Protection Regulation (NDPR)** is Nigeria's primary privacy law, issued by the National Information Technology Development Agency (NITDA) in 2019. It governs how organisations collect, store, process, and share personal data about Nigerian residents.
+
+If you have heard of Europe's **GDPR**, the NDPR is the Nigerian equivalent. The core principles are the same:
+
+- You must have a lawful reason to collect personal data.
+- You must collect only the data you actually need (minimisation).
+- You must keep it secure.
+- People have the right to know what data you hold about them, and to ask you to delete it.
+
+As a BaaS partner, you are a **data processor** — you collect personal data from your customers and pass some of it to us for verification. We are a **data processor** and, in some contexts, a **data controller**. Both of us are responsible for compliance. A failure on your side does not insulate us, and a failure on our side does not insulate you.
+
+<Info>
+  NDPR compliance is a condition of your partner agreement. Non-compliance can result in suspension of your API access, independent of any regulatory consequences you may face.
+</Info>
+
+---
+
+## Our NDPR Commitments
+
+### Consent Captured at Registration
+
+We do not process a person's personal data until we have a record that they consented to it. When your customer submits their BVN or NIN for verification through our API, our system expects that you have already obtained your customer's informed consent for that verification. We log the timestamp of every verification request as evidence of processing.
+
+### PII Minimisation
+
+**PII** stands for Personally Identifiable Information — any data that can identify a specific person, such as a BVN, NIN, date of birth, or phone number.
+
+We apply minimisation in two ways:
+
+1. **We do not return raw PII in API responses.** BVN, NIN, date of birth, and phone numbers are always masked in responses. You receive enough to confirm a match, but not enough to reconstruct the original value.
+2. **We do not store raw PII beyond what is required.** Verification results are stored; raw identity numbers are not retained in plaintext.
+
+### Immutable Audit Trail
+
+Every access to personal data — every KYC verification call, every account lookup, every document retrieval — is recorded in our WORM audit logs. These records cannot be altered or deleted. In the event of a regulatory inquiry or a data subject access request, we have a complete, tamper-proof record of every data access event.
+
+### Data Retention
+
+We retain data for the minimum period required by the Central Bank of Nigeria (CBN) KYC regulations and NDPR. When the retention period expires, data is deleted. We do not keep personal data indefinitely because it is convenient.
+
+### Right to Erasure
+
+Under NDPR Article 4, individuals have the right to request deletion of their personal data. We support this right. If a data subject submits a deletion request to you, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with the subject line `Data Erasure Request` and include the Partner ID and the customer reference. We will process the request and confirm deletion in writing.
+
+---
+
+## What NDPR Means for You as a Partner
+
+You have independent obligations under NDPR. We cannot meet these obligations on your behalf.
+
+### You Must Have a Privacy Policy
+
+Before your customers interact with your product, they must be able to read a clear privacy policy that explains:
+
+- What personal data you collect.
+- Why you collect it.
+- Who you share it with (including that you use Union Bank Nigeria for KYC and banking services).
+- How long you keep it.
+- How users can request access, correction, or deletion.
+
+A privacy policy is not optional decoration. It is a legal requirement under NDPR Section 2.1.
+
+### You Must Obtain Consent Before KYC Calls
+
+Before you call our BVN or NIN verification APIs with a customer's identity number, you must have that customer's explicit, informed consent for that specific purpose. A general "I agree to terms and conditions" checkbox is not sufficient. The consent must be specific: the user must understand that their identity document will be verified with a third-party service.
+
+<Warning>
+  Sending a customer's BVN or NIN to our API without their explicit consent is a violation of NDPR. It exposes you to regulatory action regardless of whether the verification succeeds.
+</Warning>
+
+### You Must Not Store Raw BVN or NIN
+
+You may store the outcome of a verification (verified / not verified, timestamp, reference ID). You must not store the raw BVN or NIN number beyond what is strictly necessary to complete the transaction. If you have a database column storing plaintext BVNs "for reference," that is a compliance risk.
+
+### You Must Notify Users of a Breach
+
+If your systems are breached and personal data may have been exposed, you are required under NDPR to notify affected users and NITDA within 72 hours of becoming aware of the breach. We will notify you if our systems are involved in a breach that affects your customers' data.
+
+---
+
+## How We Mask PII in API Responses
+
+The following table shows every PII field we handle and exactly how we return it in API responses.
+
+| Field | Example Raw Value | How It Is Returned | Stored in Our Database? |
+|---|---|---|---|
+| BVN | 22212345678 | `****5678` | No |
+| NIN | 12345678901 | `****8901` | No |
+| Date of Birth | 25/06/1990 | `25/06/****` | No |
+| Phone Number | 08031234567 | `****4567` | No |
+| Full Name | Amaka Okafor | Returned in full for matched verification | Verification reference only |
+| KYB Documents | (uploaded file) | Not returned in any API response | Encrypted at rest (AES-256) |
+
+<Note>
+  Masked values are consistent — the same input always returns the same mask. You can use them to confirm that a customer's number matches what they entered, without ever seeing the raw value yourself.
+</Note>
+
+---
+
+## Certification and Go-Live Review
+
+Before you are approved for production access, our compliance team reviews your integration for NDPR-relevant practices. The review covers:
+
+- Whether your application has a privacy policy accessible to end users.
+- Whether your consent flow captures explicit permission before KYC calls.
+- Whether your data storage practices are consistent with minimisation.
+
+You will be asked to confirm these practices in your production access request. Misrepresentation is grounds for immediate partner suspension.
+
+Our platform itself is reviewed for NDPR compliance annually by an independent assessor. The most recent review summary is available to partners on request via [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng).

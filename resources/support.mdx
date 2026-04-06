@@ -1,0 +1,205 @@
+---
+title: "Support"
+description: "How to get help with the UBN BaaS platform"
+---
+
+Most issues can be resolved by reading the error response carefully, checking this documentation, and running through the self-help checklist below. When you do need to contact us, we want to help you quickly — and the information in this guide helps us do that.
+
+## Support Channels
+
+<CardGroup cols={3}>
+  <Card title="Email Support" icon="envelope" href="mailto:baas-support@unionbank.ng">
+    **baas-support@unionbank.ng**
+
+    General technical support, integration questions, and quota increase requests. Response within 1 business day.
+  </Card>
+  <Card title="Self-Service Portal" icon="browser" href="https://dev-api-partner.onecluster.co">
+    **dev-api-partner.onecluster.co**
+
+    Manage API keys, view webhook delivery history, review your KYB status, and submit production access requests — without contacting support.
+  </Card>
+  <Card title="Documentation" icon="book" href="https://ubn.onecluster.co">
+    **ubn.onecluster.co**
+
+    Full API reference, integration guides, tutorials, and this page. Search is available in the top bar.
+  </Card>
+</CardGroup>
+
+<Warning>
+  For **production incidents** — a live outage, a payment stuck in PENDING, or a security concern — do not use the general support email. Email **baas-incidents@unionbank.ng** directly and prefix your subject line with `P1:` (service is down) or `P2:` (service is degraded). Incident emails are monitored outside business hours.
+</Warning>
+
+---
+
+## Before You Email Support
+
+Most integration issues have a fast self-serve resolution. Run through this checklist before sending an email — in our experience, it resolves around 70% of reported issues.
+
+<AccordionGroup>
+  <Accordion title="Check API health">
+    <Check>Is the API returning a healthy status?</Check>
+
+    ```bash
+    curl https://dev-api-partner.onecluster.co/health
+    # Expected: {"status": "healthy", "timestamp": "..."}
+    ```
+
+    If the health endpoint is not returning `healthy`, there may be a platform incident in progress. Check the status page at [dev-api-partner.onecluster.co/status](https://dev-api-partner.onecluster.co/status) before investigating your own integration.
+  </Accordion>
+
+  <Accordion title="Check your API key">
+    <Check>Is your API key correct and not revoked?</Check>
+    <Check>Are you using the right key for the right environment?</Check>
+
+    A sandbox key will be rejected by the production API, and vice versa. Log in to the portal and confirm the key you are using is active and matches the environment (sandbox or production) you are calling.
+
+    If you recently rotated your key, confirm that your deployed application is using the new key, not the old one.
+  </Accordion>
+
+  <Accordion title="Check your base URL">
+    <Check>Are you calling the correct base URL for your key type?</Check>
+
+    | Environment | Base URL |
+    |---|---|
+    | Sandbox | `https://dev-api-partner.onecluster.co` |
+    | Production | `https://api-partner.onecluster.co` |
+
+    A common error is copying the sandbox URL into production configuration or vice versa.
+  </Accordion>
+
+  <Accordion title="Check your request signature">
+    <Check>Is your `X-Signature` header computed correctly?</Check>
+
+    Payment and KYC requests require an HMAC-SHA256 signature in the `X-Signature` header. If you receive a `401 Unauthorized` on a signed endpoint, verify:
+
+    - You are signing the exact request body that will be sent (not a reformatted or re-serialised version).
+    - You are using your **signing secret**, not your API key.
+    - The signature is hex-encoded, not base64.
+    - You are not including extra whitespace or a trailing newline in the body before signing.
+
+    See the [API Reference — Authentication](/api-reference/authentication) page for the exact signing algorithm and a worked example.
+  </Accordion>
+
+  <Accordion title="Check your rate limit status">
+    <Check>Have you exceeded your rate limit? Check the `X-Quota-Remaining` header in your last response.</Check>
+
+    If `X-Quota-Remaining` is `0`, you have exhausted your billing period quota and will receive `402` responses until the reset date shown in `X-Quota-Reset`.
+
+    If you are receiving `429 Too Many Requests`, you have hit the per-minute rate limit for that endpoint. Wait for `Retry-After` seconds and retry. See [Rate Limits and Quotas](/security/rate-limits) for full details.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## What to Include in a Support Request
+
+When you do email support, include the following information in your first message. We cannot investigate without it — and missing information means a back-and-forth that delays your resolution.
+
+<Steps>
+  <Step title="Your Partner ID">
+    Your Partner ID is shown in the portal under your account settings. It looks like `PRT-0001`. This is how we look up your account.
+  </Step>
+  <Step title="The X-Correlation-ID from the failed request">
+    Every API response includes an `X-Correlation-ID` header. This is a unique identifier for that specific request in our logs. With this ID, we can find the exact request, the internal processing trace, and any error details — even if you only received a generic error message.
+
+    If you do not have this header, include the timestamp of the request (as precise as possible, including timezone) and the endpoint you called.
+  </Step>
+  <Step title="The endpoint and request details">
+    The full endpoint URL you called (e.g. `POST /api/v1/payments/transfer`), what you sent in the request body (redact any sensitive values like account numbers if needed), and the full response you received including the HTTP status code.
+  </Step>
+  <Step title="The error code and message">
+    From the response body — the `type`, `title`, `status`, and `detail` fields. If you received a `code` field inside the error, include that too. See [API Reference — Errors](/api-reference/errors) for the full list of error codes.
+  </Step>
+  <Step title="Your environment">
+    Sandbox or production. We investigate them separately.
+  </Step>
+</Steps>
+
+**Template you can copy:**
+
+```
+Partner ID: PRT-XXXX
+Environment: Sandbox / Production
+Endpoint: POST /api/v1/payments/transfer
+X-Correlation-ID: [value from response header]
+Timestamp: 2026-03-25T14:32:00+01:00
+
+Error received:
+  HTTP Status: 422
+  type: "https://errors.api-partner.onecluster.co/validation-error"
+  title: "Validation Error"
+  detail: "amount must be greater than 0"
+
+What I expected to happen:
+[describe the expected behaviour]
+
+What happened instead:
+[describe what actually happened]
+```
+
+---
+
+## Common Issues and Quick Fixes
+
+<AccordionGroup>
+  <Accordion title="401 Unauthorized on every request">
+    **Most likely cause:** The API key is incorrect, revoked, or being sent in the wrong header format.
+
+    The correct header format is:
+    ```
+    Authorization: ApiKey YOUR_KEY_HERE
+    ```
+
+    Note the `ApiKey` prefix — not `Bearer`, not `Basic`. Check that your code is building this header exactly.
+  </Accordion>
+
+  <Accordion title="401 Unauthorized on payment or KYC endpoints only">
+    **Most likely cause:** Missing or incorrect `X-Signature` header.
+
+    Payment and KYC endpoints require HMAC-SHA256 request signing in addition to the API key. The API key authenticates who you are; the signature authenticates that the request body has not been tampered with. See [API Reference — Authentication](/api-reference/authentication).
+  </Accordion>
+
+  <Accordion title="422 Validation Error on transfer">
+    **Most likely cause:** A required field is missing or in the wrong format.
+
+    Check the `detail` field in the error response — it names the specific field that failed validation. Common issues:
+    - `amount` must be a positive integer in **kobo** (not naira). ₦100 is `10000`.
+    - `bank_code` must be a 3-digit string (e.g. `"058"`, not `58`).
+    - `account_number` must be exactly 10 digits.
+    - `idempotency_key` must be unique per transaction — reusing a key from a previous transaction will return the original response.
+  </Accordion>
+
+  <Accordion title="Webhook not received">
+    **Checklist:**
+    1. Is your endpoint URL correct in the portal? Paste it into a browser to confirm it loads.
+    2. Is your endpoint returning `2xx` within 10 seconds? If it times out, the delivery is marked failed and retried.
+    3. Are you testing locally? You need ngrok or a similar tunnel to receive webhooks on a local machine. See the [Sandbox Guide](/resources/sandbox-guide).
+    4. Check the webhook delivery history in the portal. It shows every attempted delivery, the HTTP status code your endpoint returned, and whether retries are scheduled.
+  </Accordion>
+
+  <Accordion title="Transfer stuck in PENDING">
+    Transfers via NIP should complete within 30 seconds. If a transfer remains `PENDING` for longer:
+
+    1. Check the NIP network status at [dev-api-partner.onecluster.co/status](https://dev-api-partner.onecluster.co/status).
+    2. Poll `GET /api/v1/payments/{reference}` for up to 5 minutes before treating it as a failure.
+    3. If still `PENDING` after 5 minutes in production, email baas-incidents@unionbank.ng with the `X-Correlation-ID` and payment reference.
+
+    In the sandbox, transfers complete instantly. A stuck PENDING in the sandbox usually means the account number used is not a valid test account. Use `0123456789` / bank code `058` for reliable test transfers.
+  </Accordion>
+
+  <Accordion title="BVN verification returning 'not found' in sandbox">
+    In the sandbox, BVN verification only returns a successful match for numbers starting with `222` (e.g. `22212345678`). Any other number returns `not found`. This is intentional — it lets you test both your happy path and your error handling. See the [Sandbox Guide](/resources/sandbox-guide) for all test data values.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Escalation
+
+| Priority | Criteria | Contact | Subject Line Format |
+|---|---|---|---|
+| **P1** | Complete service outage — production API returning 5xx, no payments processing | baas-incidents@unionbank.ng | `P1: [brief description]` |
+| **P2** | Significant degradation — some endpoints failing, payment delays, webhook backlog | baas-incidents@unionbank.ng | `P2: [brief description]` |
+| **P3** | General technical issue, integration question, non-urgent bug | baas-support@unionbank.ng | Standard subject |
+
+P1 and P2 emails are monitored 24/7. P3 emails are handled during business hours (Monday to Friday, 8 AM to 6 PM WAT) with a target response time of 1 business day.

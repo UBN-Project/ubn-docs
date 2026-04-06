@@ -1,0 +1,257 @@
+---
+title: "Payments API"
+description: "Send money from a virtual account to any Nigerian bank account. Supports instant NIP transfers and scheduled bulk payments."
+---
+
+## Overview
+
+The Payments API lets your platform move money out of a virtual account to any bank in Nigeria. Transfers are processed through the **NIP (Nigeria Instant Payment)** network, which is the same inter-bank rails used by every major Nigerian bank. Most transfers complete in under 10 seconds.
+
+**Key facts:**
+- Minimum transfer amount: ₦1 (100 kobo)
+- Maximum per transfer: determined by your tier (see your dashboard)
+- Settlement: instant in sandbox; NIP real-time in production
+- All requests require an **idempotency key** to prevent duplicate payments
+
+---
+
+## Base URL
+
+| Environment | Base URL |
+|-------------|----------|
+| Sandbox | `https://dev-api-partner.onecluster.co` |
+| Production | `https://api-partner.onecluster.co` |
+
+---
+
+## Authentication
+
+All Payments endpoints require an API key:
+
+```http
+Authorization: ApiKey <your-api-key>
+```
+
+High-value production transfers additionally require **mTLS** (mutual TLS). Your server must present a client certificate issued during the go-live process. Contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) to obtain your certificate.
+
+---
+
+## Idempotency
+
+Every payment request **must** include an idempotency key. This is a unique string you generate (a UUID is ideal) that ensures the same payment is never processed twice, even if your server retries after a timeout.
+
+```http
+X-Idempotency-Key: 7f3a2b9c-1d4e-4f5a-8b6c-2e9d0f1a3c5e
+```
+
+If you send two requests with the same idempotency key within 24 hours, the second request returns the result of the first instead of creating a new payment. After 24 hours, the key expires and can be reused.
+
+---
+
+## Endpoints
+
+### Initiate Transfer
+
+`POST /v1/payments/transfer`
+
+Sends money from one of your virtual accounts to any Nigerian bank account.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `source_account_id` | string | Yes | The `account_id` of your virtual account to debit |
+| `amount` | integer | Yes | Amount in **kobo** (₦1,000 = `100000`) |
+| `currency` | string | Yes | Always `NGN` |
+| `beneficiary_account_number` | string | Yes | Destination 10-digit NUBAN |
+| `beneficiary_bank_code` | string | Yes | 3-digit CBN bank code for the destination bank |
+| `beneficiary_name` | string | Yes | Full name of the account holder at the destination bank |
+| `narration` | string | No | Description that appears on the beneficiary's bank statement (max 50 characters) |
+| `reference` | string | No | Your internal reference for this payment — returned in webhooks |
+| `metadata` | object | No | Any key-value pairs for your own records |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `payment_id` | Unique ID for tracking this payment |
+| `status` | `pending`, `processing`, `completed`, or `failed` |
+| `amount` | Amount debited in kobo |
+| `fee` | Processing fee in kobo |
+| `reference` | Your reference (or system-generated if not provided) |
+| `estimated_completion` | ISO 8601 timestamp for expected settlement |
+
+**Example request:**
+
+```json
+{
+  "source_account_id": "acct_9d7e1c",
+  "amount": 500000,
+  "currency": "NGN",
+  "beneficiary_account_number": "0987654321",
+  "beneficiary_bank_code": "044",
+  "beneficiary_name": "Chidi Okonkwo",
+  "narration": "Invoice payment - INV-2024-042",
+  "reference": "PAY-20240115-001"
+}
+```
+
+**Example response:**
+
+```json
+{
+  "payment_id": "pay_4a8f2c",
+  "status": "processing",
+  "amount": 500000,
+  "fee": 5000,
+  "currency": "NGN",
+  "reference": "PAY-20240115-001",
+  "created_at": "2024-01-15T10:30:00+01:00",
+  "estimated_completion": "2024-01-15T10:30:10+01:00"
+}
+```
+
+---
+
+### Get Payment Status
+
+`GET /v1/payments/{payment_id}`
+
+Check the current status of a payment. Poll this endpoint if you do not use webhooks, or use it to verify webhook events.
+
+**Path parameter:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `payment_id` | The `payment_id` returned when the transfer was initiated |
+
+**Status values:**
+
+| Status | Meaning |
+|--------|---------|
+| `pending` | Payment queued, not yet submitted to NIP |
+| `processing` | Submitted to the NIP network |
+| `completed` | Beneficiary account credited |
+| `failed` | Transfer unsuccessful — see `failure_reason` |
+| `reversed` | Payment was reversed after initial completion |
+
+---
+
+### List Payments
+
+`GET /v1/payments`
+
+Returns a paginated list of all payments made from your business accounts.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `from` | string | — | Start date `YYYY-MM-DD` |
+| `to` | string | — | End date `YYYY-MM-DD` |
+| `status` | string | all | Filter by payment status |
+| `source_account_id` | string | — | Return only payments from this account |
+| `page` | integer | `1` | Page number |
+| `per_page` | integer | `20` | Results per page (max 100) |
+
+---
+
+### Reverse Payment
+
+`POST /v1/payments/{payment_id}/reverse`
+
+Request a reversal of a completed payment. Reversals are not guaranteed — if the beneficiary bank has already credited the account and the funds have been spent, reversal may fail.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `reason` | string | Yes | Reason for reversal (e.g., `wrong_account`, `duplicate_payment`) |
+
+<Warning>
+  Reversals are best-effort and depend on the beneficiary bank's cooperation. Always verify account details before initiating a transfer.
+</Warning>
+
+---
+
+### Verify Bank Account
+
+`GET /v1/payments/verify-account`
+
+Confirm that a bank account number and name match before sending money. Prevents failed transfers due to wrong account numbers.
+
+**Query parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `account_number` | string | Yes | 10-digit NUBAN to verify |
+| `bank_code` | string | Yes | 3-digit CBN bank code |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `account_name` | Registered name of the account holder |
+| `account_number` | Confirmed account number |
+| `bank_name` | Bank name |
+| `verified` | `true` if the account exists and is active |
+
+---
+
+### Nigerian Bank Codes (Common)
+
+| Bank | Code |
+|------|------|
+| Access Bank | 044 |
+| Zenith Bank | 057 |
+| GTBank | 058 |
+| First Bank | 011 |
+| UBA | 033 |
+| Union Bank | 032 |
+| Kuda Bank | 090267 |
+| OPay | 100004 |
+| Moniepoint | 50515 |
+
+The full list of CBN bank codes is available at [CBN's official portal](https://www.cbn.gov.ng).
+
+---
+
+## Request Signing (Production)
+
+Production payment requests must be signed with your HMAC-SHA256 secret key. This prevents tampering in transit.
+
+**Signing steps:**
+
+1. Concatenate: `timestamp + "." + request_body_json`
+2. Compute: `HMAC-SHA256(concatenated_string, your_hmac_secret)`
+3. Encode: Base64 the result
+4. Send: Include in the `X-Signature` header along with `X-Timestamp`
+
+```http
+X-Timestamp: 1705312200
+X-Signature: Base64(HMAC-SHA256("1705312200.{...body...}", hmac_secret))
+```
+
+The timestamp must be within **5 minutes** of the server clock. Requests with older timestamps are rejected to prevent replay attacks.
+
+---
+
+## Error Codes
+
+| HTTP Status | Error Code | Meaning |
+|-------------|------------|---------|
+| 400 | `VALIDATION_ERROR` | Missing or invalid fields |
+| 402 | `INSUFFICIENT_BALANCE` | Source account does not have enough funds |
+| 404 | `ACCOUNT_NOT_FOUND` | Source account ID does not exist |
+| 409 | `DUPLICATE_PAYMENT` | Idempotency key already used — returning original result |
+| 422 | `INVALID_BANK_ACCOUNT` | Beneficiary account not found or inactive |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests — see [Rate Limits](/security/rate-limits) |
+| 503 | `NIP_UNAVAILABLE` | Inter-bank network temporarily unavailable — retry |
+
+---
+
+## Full API Reference
+
+<Card title="Open API Playground" icon="play" href="/api-reference">
+  Try Payments endpoints live in the browser
+</Card>

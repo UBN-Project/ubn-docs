@@ -1,0 +1,356 @@
+---
+title: "Authentication"
+description: "How to authenticate with the UBN BaaS API"
+---
+
+<Note>
+  Every request to the UBN BaaS API requires authentication. Payment and KYC requests require an additional signature on top of your API key. Read this page fully before writing any integration code.
+</Note>
+
+The UBN BaaS API uses a layered security model. Each layer adds protection for a more sensitive class of operation:
+
+| Layer | Required for | What it protects against |
+|-------|-------------|--------------------------|
+| API Key | All requests | Unauthenticated access |
+| Request Signature (HMAC) | Payments and KYC | Tampering with request data in transit |
+| mTLS Client Certificate | Production payments only | Man-in-the-middle attacks at the TLS layer |
+
+---
+
+## API Key Authentication
+
+Every request must include your API key in the `Authorization` header using the `ApiKey` scheme.
+
+```
+Authorization: ApiKey ubn_sb_your_key_here
+```
+
+### Key prefixes and environments
+
+Your API key prefix tells you which environment it belongs to. The platform enforces this — you cannot accidentally use a sandbox key against production or vice versa.
+
+| Prefix | Environment | Base URL |
+|--------|-------------|----------|
+| `ubn_sb_` | Sandbox | `https://dev-api-partner.onecluster.co` |
+| `ubn_pk_` | Production | `https://api-partner.onecluster.co` |
+
+Using the wrong key for an environment returns a `403 ENVIRONMENT_MISMATCH` error immediately. See [Error Reference](/api-reference/errors) for details.
+
+### Code examples
+
+<CodeGroup>
+
+```bash curl
+curl https://dev-api-partner.onecluster.co/api/v1/accounts \
+  --header "Authorization: ApiKey ubn_sb_your_key_here" \
+  --header "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/accounts', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'ApiKey ubn_sb_your_key_here',
+    'Content-Type': 'application/json',
+  },
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://dev-api-partner.onecluster.co/api/v1/accounts',
+    headers={
+        'Authorization': 'ApiKey ubn_sb_your_key_here',
+        'Content-Type': 'application/json',
+    }
+)
+
+data = response.json()
+```
+
+</CodeGroup>
+
+<Warning>
+  Never hard-code your API key in source code. Store it in an environment variable (`UBN_API_KEY`) and read it at runtime. If you accidentally commit a key to a public repository, revoke it immediately from the [API Keys page](https://dev-ubn-ui.onecluster.co/dashboard/settings/api-credentials) and generate a new one.
+</Warning>
+
+---
+
+## Signing Requests
+
+Payment and KYC endpoints require a request signature in addition to your API key. This signature proves that the request body has not been modified between your server and ours.
+
+**Why we require signatures:** If someone intercepts an outbound HTTP request from your server — a man-in-the-middle attack — they could change the destination account number or the transfer amount before it reaches us. Your API key alone cannot detect this. A signature, computed from the exact body you sent, makes tampering detectable: any change to the body invalidates the signature and we reject the request.
+
+### How to compute the signature
+
+<Steps>
+  <Step title="Serialise the request body">
+    Take your request body as a JSON string. The serialisation must be consistent — the same object must always produce the same string. Use compact serialisation (no extra spaces) and ensure key order is deterministic.
+
+    ```json
+    {"sourceAccount":"0123456789","destinationAccount":"9876543210","amount":50000}
+    ```
+  </Step>
+  <Step title="Compute an HMAC-SHA256 hash">
+    Hash the JSON string using HMAC-SHA256 with your **signing secret** as the key. Your signing secret is separate from your API key — you receive it during onboarding and it is also available in the [API Keys page](https://dev-ubn-ui.onecluster.co/dashboard/settings/api-credentials) of your dashboard.
+  </Step>
+  <Step title="Hex-encode the hash">
+    Convert the raw binary HMAC output to a lowercase hexadecimal string.
+  </Step>
+  <Step title="Add the X-Signature header">
+    Prepend the string `sha256=` to the hex digest and include it as the `X-Signature` header.
+
+    ```
+    X-Signature: sha256=3a5b9c1d...
+    ```
+  </Step>
+</Steps>
+
+### Code examples
+
+<CodeGroup>
+
+```javascript JavaScript
+const crypto = require('crypto');
+
+function signRequest(body, signingSecret) {
+  // Step 1: Serialise with compact JSON (no extra whitespace)
+  const bodyString = JSON.stringify(body);
+
+  // Steps 2 & 3: HMAC-SHA256 and hex-encode
+  const hash = crypto
+    .createHmac('sha256', signingSecret)
+    .update(bodyString)
+    .digest('hex');
+
+  // Step 4: Prepend the scheme identifier
+  return `sha256=${hash}`;
+}
+
+// Usage
+const body = {
+  sourceAccount: '0123456789',
+  destinationAccount: '9876543210',
+  amount: 50000,
+};
+
+const signature = signRequest(body, process.env.UBN_SIGNING_SECRET);
+
+const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/payments/transfer', {
+  method: 'POST',
+  headers: {
+    'Authorization': `ApiKey ${process.env.UBN_API_KEY}`,
+    'Content-Type': 'application/json',
+    'X-Idempotency-Key': crypto.randomUUID(),
+    'X-Signature': signature,
+  },
+  body: JSON.stringify(body),
+});
+```
+
+```python Python
+import hmac
+import hashlib
+import json
+import os
+import uuid
+import requests
+
+def sign_request(body: dict, signing_secret: str) -> str:
+    # Step 1: Compact serialisation — no spaces around separators
+    body_str = json.dumps(body, separators=(',', ':'))
+
+    # Steps 2 & 3: HMAC-SHA256 and hex-encode
+    signature = hmac.new(
+        signing_secret.encode('utf-8'),
+        body_str.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+
+    # Step 4: Prepend the scheme identifier
+    return f"sha256={signature}"
+
+
+# Usage
+body = {
+    'sourceAccount': '0123456789',
+    'destinationAccount': '9876543210',
+    'amount': 50000,
+}
+
+signature = sign_request(body, os.environ['UBN_SIGNING_SECRET'])
+
+response = requests.post(
+    'https://dev-api-partner.onecluster.co/api/v1/payments/transfer',
+    json=body,
+    headers={
+        'Authorization': f"ApiKey {os.environ['UBN_API_KEY']}",
+        'X-Idempotency-Key': str(uuid.uuid4()),
+        'X-Signature': signature,
+    }
+)
+```
+
+</CodeGroup>
+
+<Warning>
+  The body you sign and the body you send must be byte-for-byte identical. If your HTTP client re-serialises the JSON after you sign it (for example, by sorting keys or adding spaces), the signature will not match. Always sign the exact string your client will transmit.
+</Warning>
+
+<Info>
+  If you receive an `INVALID_SIGNATURE` error, work through this checklist:
+  1. Confirm you are using the **signing secret**, not the API key.
+  2. Confirm you are serialising with compact JSON (no extra whitespace).
+  3. Confirm the body you sign is the exact bytes being sent in the HTTP request.
+  4. Check that your signing secret has not been rotated since you last fetched it from the dashboard.
+</Info>
+
+---
+
+## mTLS Client Certificates
+
+Mutual TLS (mTLS) is required for all payment operations in the **production** environment. It is not required in sandbox.
+
+**What mTLS means in plain English:** Normally when you connect to an HTTPS server, only the server proves its identity to you (via its TLS certificate). With mTLS, you also prove your identity to the server — both sides show their "ID card" before the connection opens. This makes it impossible for an attacker to pose as you, even if they obtain your API key.
+
+### How to get your client certificate
+
+Your client certificate is issued during production onboarding. Contact your UBN relationship manager or email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) to start the process. You will receive:
+
+- `client.crt` — your client certificate (public)
+- `client.key` — your private key (keep this secret, never commit it)
+
+<Warning>
+  Your private key (`client.key`) must be stored securely — treat it with the same care as a password. Store it as a secret in your secrets manager, never on disk in a production server, and never in source code or environment variable files that get committed to version control.
+</Warning>
+
+### Using mTLS with curl
+
+```bash
+curl https://api-partner.onecluster.co/api/v1/payments/transfer \
+  --cert client.crt \
+  --key client.key \
+  --header "Authorization: ApiKey ubn_pk_your_production_key" \
+  --header "Content-Type: application/json" \
+  --header "X-Signature: sha256=..." \
+  --header "X-Idempotency-Key: a1b2c3d4-e5f6-7890-abcd-ef1234567890" \
+  --data '{"sourceAccount":"0123456789","destinationAccount":"9876543210","amount":50000}'
+```
+
+### Using mTLS in Node.js
+
+```javascript
+const https = require('https');
+const fs = require('fs');
+const crypto = require('crypto');
+
+const agent = new https.Agent({
+  cert: fs.readFileSync('/run/secrets/client.crt'),
+  key: fs.readFileSync('/run/secrets/client.key'),
+});
+
+const body = {
+  sourceAccount: '0123456789',
+  destinationAccount: '9876543210',
+  amount: 50000,
+};
+
+const bodyString = JSON.stringify(body);
+const signature = `sha256=${crypto
+  .createHmac('sha256', process.env.UBN_SIGNING_SECRET)
+  .update(bodyString)
+  .digest('hex')}`;
+
+const response = await fetch('https://api-partner.onecluster.co/api/v1/payments/transfer', {
+  method: 'POST',
+  agent,   // attaches the mTLS client certificate
+  headers: {
+    'Authorization': `ApiKey ${process.env.UBN_API_KEY}`,
+    'Content-Type': 'application/json',
+    'X-Idempotency-Key': crypto.randomUUID(),
+    'X-Signature': signature,
+  },
+  body: bodyString,
+});
+```
+
+<Info>
+  mTLS is enforced at the network layer, before your request is processed. If the certificate is missing or invalid, the connection is terminated before the API key is checked and you will see a TLS handshake error, not an HTTP error response.
+</Info>
+
+---
+
+## Idempotency Keys
+
+### What idempotency means
+
+Networks fail. Connections drop. Load balancers time out. When you send a payment request and the response never arrives, you face a problem: did the payment go through, or not? If you retry the request and the original succeeded, you might send the same payment twice.
+
+**Idempotency solves this.** You generate a unique key (a UUID) and include it in the `X-Idempotency-Key` header. If you send the exact same key again — whether 5 milliseconds or 5 hours later — the API returns the original response without taking any new action. No duplicate payment. No duplicate account. No guessing.
+
+### Rules for idempotency keys
+
+- Generate a new UUID for each **distinct** operation. Do not reuse keys across different requests.
+- The replay window is **24 hours**. After 24 hours, the same key is treated as a new request.
+- If you send the same key with a **different request body**, the API returns a `409 CONFLICT` error — this prevents accidentally masking changes with an old key.
+- The `X-Idempotency-Replayed: true` response header tells you when a response is a replay. Log this — it means your retry worked and the original response is intact.
+
+<Warning>
+  Never reuse the same idempotency key for different operations. If you send a transfer with key `abc-123` and then try to create an account with the same key, the second request will either be rejected or return the transfer response, depending on timing.
+</Warning>
+
+### Generating a UUID
+
+<CodeGroup>
+
+```javascript JavaScript
+const crypto = require('crypto');
+
+const idempotencyKey = crypto.randomUUID();
+// Example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+```
+
+```python Python
+import uuid
+
+idempotency_key = str(uuid.uuid4())
+# Example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+```
+
+```bash Bash
+idempotency_key=$(uuidgen)
+# Example: "A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
+# Note: uuidgen on macOS outputs uppercase — both are accepted
+```
+
+</CodeGroup>
+
+### Detecting a replay
+
+```javascript
+const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/payments/transfer', {
+  method: 'POST',
+  headers: {
+    'Authorization': `ApiKey ${process.env.UBN_API_KEY}`,
+    'Content-Type': 'application/json',
+    'X-Idempotency-Key': idempotencyKey,
+    'X-Signature': signature,
+  },
+  body: JSON.stringify(body),
+});
+
+if (response.headers.get('X-Idempotency-Replayed') === 'true') {
+  console.log('This is a replayed response — no new action was taken.');
+}
+
+const data = await response.json();
+```
+
+<Tip>
+  In a high-reliability system, store each idempotency key alongside the result in your own database before considering the operation complete. If your process crashes before storing the result, you can retry with the same key and get the same response — and then store it safely.
+</Tip>

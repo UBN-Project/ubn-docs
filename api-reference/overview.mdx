@@ -1,0 +1,197 @@
+---
+title: "API Reference Overview"
+description: "Base URLs, request format, response format, and versioning"
+---
+
+<Note>
+  New to the API? Read [Authentication](/api-reference/authentication) next — every request requires an API key, and payment requests require a signature on top of that.
+</Note>
+
+## Base URLs
+
+Every request you make goes to one of two base URLs depending on your stage of development. The two environments are completely separate — separate keys, separate accounts, separate transaction history.
+
+| Environment | Base URL | When to use |
+|-------------|----------|-------------|
+| **Sandbox** | `https://dev-api-partner.onecluster.co` | Testing and development — no real money moves |
+| **Production** | `https://api-partner.onecluster.co` | Live application — real transactions with real funds |
+
+<Warning>
+  Sandbox API keys (prefixed `ubn_sb_`) only work against the sandbox URL. Production keys (prefixed `ubn_pk_`) only work against the production URL. Using the wrong combination returns a `403 ENVIRONMENT_MISMATCH` error.
+</Warning>
+
+## Versioning
+
+All endpoints are available under the `/api/v1/` path prefix. For example:
+
+```
+https://dev-api-partner.onecluster.co/api/v1/accounts
+```
+
+We follow these versioning commitments:
+
+- We will never remove or make breaking changes to a version without at least **6 months advance notice**.
+- New fields may be added to responses at any time — your code should ignore fields it does not recognise.
+- When a new version is released, the previous version continues to work until its end-of-life date is announced.
+- Version deprecation notices are published in the [Changelog](/resources/changelog) and emailed to all active API key holders.
+
+<Info>
+  "Breaking change" means removing a field, renaming a field, changing a field's data type, or changing the meaning of an existing error code. Adding new optional fields or new error codes is not considered a breaking change.
+</Info>
+
+## Request Format
+
+All request and response bodies use **JSON** (`application/json`) unless you are uploading files, in which case use `multipart/form-data`.
+
+### Standard Request Headers
+
+Every request must include the headers marked as required. The optional headers are strongly recommended for production use.
+
+| Header | Required | Description | Example |
+|--------|----------|-------------|---------|
+| `Authorization` | Yes | Your API key, prefixed with `ApiKey `. | `ApiKey ubn_sb_abc123` |
+| `Content-Type` | Yes (write requests) | Must be `application/json` for POST, PUT, and PATCH requests. Not required for GET or DELETE. | `application/json` |
+| `X-Correlation-ID` | No (recommended) | A UUID you generate and attach to every request. It is returned in the response and in any webhook events that result from this request. Invaluable for debugging. | `7f3a9c21-4e8b-4d02-b3d0-abc123456789` |
+| `X-Idempotency-Key` | Yes (write operations) | A UUID you generate to make POST requests safe to retry. If you send the same key twice, the second request returns the original response — no duplicate action occurs. See [Idempotency Keys](/api-reference/authentication#idempotency-keys). | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` |
+| `X-Signature` | Yes (payments and KYC) | An HMAC-SHA256 signature of the request body. Prevents tampering in transit. See [Signing Requests](/api-reference/authentication#signing-requests). | `sha256=3a5b9c...` |
+
+<Tip>
+  Generate your `X-Correlation-ID` and `X-Idempotency-Key` values as UUIDs (version 4). Most languages have a built-in or one-line library for this. The two values can be different — they serve different purposes.
+</Tip>
+
+## Response Format
+
+### Standard Response Headers
+
+Every response from the API includes these headers. Check them — especially the quota headers — when building production-grade integrations.
+
+| Header | Description | Example |
+|--------|-------------|---------|
+| `X-Correlation-ID` | Echoes back the `X-Correlation-ID` you sent, or assigns one if you did not send one. Always log this alongside errors. | `7f3a9c21-4e8b-4d02-b3d0-abc123456789` |
+| `X-Quota-Remaining` | Number of API calls remaining in your current billing period. | `4850` |
+| `X-Quota-Limit` | Total API calls allowed in your billing period. | `5000` |
+| `X-Quota-Reset` | Unix timestamp (seconds) when your quota resets. | `1711324800` |
+| `X-Circuit-Breaker-Open` | Present and set to `true` when a downstream service is temporarily unavailable. When you see this, back off and retry in 30 seconds. | `true` |
+| `X-Key-Rotation-Warning` | Present when your API key is within 14 days of its expiry. Rotate your key before this date. | `expires_in=12d` |
+| `X-Idempotency-Replayed` | Present and set to `true` when the response is a cached replay of a previous identical request (same idempotency key). Tells you no new action was taken. | `true` |
+
+### Success Response Envelope
+
+All successful responses wrap the returned data in a consistent envelope. The `data` field contains the resource or result you requested.
+
+```json
+{
+  "success": true,
+  "responseCode": "00",
+  "message": "Request processed successfully",
+  "data": { }
+}
+```
+
+<ResponseField name="success" type="boolean" required>
+  Always `true` for successful responses. If this field is `false`, the response is an error — check the `code` field.
+</ResponseField>
+
+<ResponseField name="responseCode" type="string" required>
+  A two-character code. `"00"` means success. Non-zero codes indicate specific outcomes — see the [Error Reference](/api-reference/errors) for the full list.
+</ResponseField>
+
+<ResponseField name="message" type="string" required>
+  A human-readable summary of what happened. Do not parse this string in code — use `responseCode` for programmatic checks.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  The payload. Its structure depends on the endpoint. Each endpoint in this reference documents the fields inside `data`.
+</ResponseField>
+
+### Error Response Format (RFC 7807)
+
+When something goes wrong, the API returns an error in the [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807) format. This is an industry-standard format — if you have worked with other modern APIs you may recognise it.
+
+```json
+{
+  "type": "https://api-partner.onecluster.co/errors/insufficient-funds",
+  "title": "Insufficient Funds",
+  "status": 422,
+  "detail": "Account balance is ₦0.00. Minimum required: ₦50,000.00",
+  "instance": "/api/v1/payments/transfer",
+  "correlationId": "7f3a9c21-4e8b-4d02-b3d0-abc123456789",
+  "code": "INSUFFICIENT_FUNDS"
+}
+```
+
+<ResponseField name="type" type="string" required>
+  A URI that uniquely identifies this error type. You can open it in a browser for documentation on the specific error.
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  A short, human-readable summary of the error type. Stable — does not change between occurrences of the same error.
+</ResponseField>
+
+<ResponseField name="status" type="integer" required>
+  The HTTP status code for this error. Matches the actual HTTP response status.
+</ResponseField>
+
+<ResponseField name="detail" type="string" required>
+  A human-readable explanation specific to this occurrence of the error. May include amounts, account numbers, or field names to help you diagnose the issue.
+</ResponseField>
+
+<ResponseField name="instance" type="string" required>
+  The endpoint path where the error occurred.
+</ResponseField>
+
+<ResponseField name="correlationId" type="string" required>
+  The correlation ID for this specific request. Include this when contacting support — it is the fastest way to find your request in our logs.
+</ResponseField>
+
+<ResponseField name="code" type="string" required>
+  A machine-readable error code. Use this in your code to handle specific errors programmatically. See the [full error code list](/api-reference/errors#error-codes).
+</ResponseField>
+
+## Pagination
+
+Endpoints that return lists accept two query parameters to control paging:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | `integer` | `1` | The page number to return. Pages start at 1. |
+| `pageSize` | `integer` | `20` | How many items to return per page. Maximum is `100`. |
+
+The response envelope includes a `pagination` object inside `data`:
+
+```json
+{
+  "success": true,
+  "responseCode": "00",
+  "message": "Request processed successfully",
+  "data": {
+    "items": [ ],
+    "pagination": {
+      "page": 1,
+      "pageSize": 20,
+      "total": 143,
+      "totalPages": 8
+    }
+  }
+}
+```
+
+<ResponseField name="data.pagination.total" type="integer">
+  Total number of items across all pages.
+</ResponseField>
+
+<ResponseField name="data.pagination.totalPages" type="integer">
+  Total number of pages given the current `pageSize`.
+</ResponseField>
+
+To fetch the next page, increment `page` by 1 and repeat the request with the same `pageSize`.
+
+## Timestamps and Timezone
+
+All timestamps in request and response bodies use **ISO 8601 format** and are expressed in **WAT (West Africa Time, UTC+1)**.
+
+```
+2025-03-25T14:30:00+01:00
+```
+
+When filtering by date ranges (for example, fetching transactions between two dates), pass ISO 8601 timestamps with the `+01:00` offset. If you pass a UTC timestamp (with `Z` or `+00:00`), the API will accept it and convert it internally — but the response timestamps will always be returned in WAT.

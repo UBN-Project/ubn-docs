@@ -1,0 +1,237 @@
+---
+title: "Collections API"
+description: "Accept incoming payments from customers. Generate payment links, track incoming transfers, and reconcile collections against your records."
+---
+
+## Overview
+
+The Collections API handles money coming **in** to your platform — the opposite of Payments, which handles money going out. When a customer wants to pay you, you use the Collections API to:
+
+1. Create a **collection reference** (a payment link or account number) for the customer.
+2. The customer sends money to that reference from any bank in Nigeria.
+3. The platform credits your virtual account and fires a **webhook** to notify you instantly.
+4. You query the Collections API to reconcile and confirm the credit.
+
+Collections work over the NIP network, so funds arrive in near real-time.
+
+---
+
+## Base URL
+
+| Environment | Base URL |
+|-------------|----------|
+| Sandbox | `https://dev-api-partner.onecluster.co` |
+| Production | `https://api-partner.onecluster.co` |
+
+---
+
+## Authentication
+
+```http
+Authorization: ApiKey <your-api-key>
+```
+
+---
+
+## How Collections Work
+
+```
+Your platform                  Customer                   NIP Network
+     │                             │                            │
+     │──POST /collections/intent──▶│                            │
+     │◀──collection_reference──────│                            │
+     │                             │                            │
+     │                             │──Bank transfer────────────▶│
+     │                             │                            │──Credits virtual account
+     │◀──Webhook notification──────────────────────────────────│
+     │                             │                            │
+     │──GET /collections/{id}──────────────────────────────────▶│
+     │◀──Confirmed credit──────────────────────────────────────│
+```
+
+---
+
+## Endpoints
+
+### Create Collection Intent
+
+`POST /v1/collections/intent`
+
+Generate a unique payment reference for a customer to send you money. You can set an exact expected amount (for invoices) or leave it open (for top-ups).
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `destination_account_id` | string | Yes | The virtual account that should receive the funds |
+| `expected_amount` | integer | No | Expected amount in kobo. If set, only this exact amount is accepted |
+| `currency` | string | Yes | Always `NGN` |
+| `description` | string | No | What this payment is for — shown in the webhook and statement |
+| `expires_at` | string | No | ISO 8601 datetime after which this intent expires. Default: never |
+| `customer_ref` | string | No | Your internal reference for the customer (e.g., order ID) |
+| `metadata` | object | No | Any key-value pairs for your own records |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `collection_id` | Unique ID for this collection intent |
+| `collection_reference` | A unique string the customer includes in their transfer narration |
+| `destination_account_number` | The NUBAN to send money to |
+| `destination_bank_name` | Always `Union Bank of Nigeria` |
+| `destination_bank_code` | Union Bank's CBN bank code |
+| `expected_amount` | Amount in kobo (if specified) |
+| `status` | `pending` — waiting for payment |
+| `expires_at` | Expiry datetime or `null` |
+
+**Example request:**
+
+```json
+{
+  "destination_account_id": "acct_9d7e1c",
+  "expected_amount": 150000,
+  "currency": "NGN",
+  "description": "Payment for Order #ORD-20240115-042",
+  "customer_ref": "ORD-20240115-042"
+}
+```
+
+**Example response:**
+
+```json
+{
+  "collection_id": "col_7b3f1a",
+  "collection_reference": "UBN-COL-7B3F1A",
+  "destination_account_number": "0123456789",
+  "destination_bank_name": "Union Bank of Nigeria",
+  "destination_bank_code": "032",
+  "expected_amount": 150000,
+  "currency": "NGN",
+  "status": "pending",
+  "expires_at": null,
+  "created_at": "2024-01-15T11:00:00+01:00"
+}
+```
+
+<Tip>
+  Show the customer the `destination_account_number`, `destination_bank_code`, and `collection_reference`. Instruct them to include the reference in the transfer narration so the payment is automatically matched to their order.
+</Tip>
+
+---
+
+### Get Collection Status
+
+`GET /v1/collections/{collection_id}`
+
+Check whether a payment has been received for a specific collection intent.
+
+**Status values:**
+
+| Status | Meaning |
+|--------|---------|
+| `pending` | Awaiting payment from customer |
+| `partially_paid` | Customer sent less than the expected amount |
+| `paid` | Full payment received — virtual account credited |
+| `overpaid` | Customer sent more than expected |
+| `expired` | Intent expired before payment arrived |
+| `cancelled` | Manually cancelled via the API |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `collection_id` | Intent identifier |
+| `status` | Current status (see above) |
+| `expected_amount` | Amount expected in kobo |
+| `amount_received` | Amount actually credited in kobo |
+| `payment_reference` | NIP session reference for the inbound transfer |
+| `paid_at` | ISO 8601 timestamp when the credit was received |
+
+---
+
+### List Collections
+
+`GET /v1/collections`
+
+Returns all collection intents for your business, with filtering options.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | all | Filter by status |
+| `destination_account_id` | string | — | Return only collections for this account |
+| `from` | string | — | Start date `YYYY-MM-DD` |
+| `to` | string | — | End date `YYYY-MM-DD` |
+| `page` | integer | `1` | Page number |
+| `per_page` | integer | `20` | Max 100 |
+
+---
+
+### Cancel Collection Intent
+
+`DELETE /v1/collections/{collection_id}`
+
+Cancel an outstanding collection intent. Once cancelled, any payment arriving with this reference will be rejected and returned to the sender.
+
+---
+
+## Webhooks for Collections
+
+The fastest way to know a payment arrived is via a webhook. When a collection intent is paid, the platform immediately sends a `collection.paid` event to your webhook URL.
+
+**Webhook payload example:**
+
+```json
+{
+  "event": "collection.paid",
+  "data": {
+    "collection_id": "col_7b3f1a",
+    "amount_received": 150000,
+    "currency": "NGN",
+    "payment_reference": "NIP20240115XXXXXX",
+    "customer_ref": "ORD-20240115-042",
+    "paid_at": "2024-01-15T11:03:47+01:00"
+  }
+}
+```
+
+See the [Webhooks product guide](/products/webhooks) for how to set up your webhook endpoint and verify the signature.
+
+---
+
+## Simulating Payments in Sandbox
+
+In the sandbox environment, incoming payments do not arrive automatically. Use the simulation endpoint to trigger a test credit:
+
+`POST /v1/collections/{collection_id}/simulate-payment`
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `amount` | integer | Yes | Amount to simulate in kobo |
+| `sender_name` | string | No | Name of the simulated sender |
+| `sender_account` | string | No | Simulated sender account number |
+
+This triggers the full webhook flow as if a real payment arrived — useful for testing your webhook handler end-to-end.
+
+---
+
+## Error Codes
+
+| HTTP Status | Error Code | Meaning |
+|-------------|------------|---------|
+| 400 | `VALIDATION_ERROR` | Missing or invalid fields |
+| 404 | `COLLECTION_NOT_FOUND` | No collection intent with this ID |
+| 409 | `COLLECTION_ALREADY_PAID` | Payment already received for this intent |
+| 410 | `COLLECTION_EXPIRED` | Intent has expired — create a new one |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests |
+
+---
+
+## Full API Reference
+
+<Card title="Open API Playground" icon="play" href="/api-reference">
+  Try Collections endpoints live in the browser
+</Card>

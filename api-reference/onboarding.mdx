@@ -1,0 +1,189 @@
+---
+title: "Onboarding API"
+description: "Register your business, submit verification documents, and obtain API keys — all via the Onboarding API."
+---
+
+## Overview
+
+The Onboarding API handles everything required to bring a new business onto the Union Bank BaaS platform. You call these endpoints once during setup; after your business is approved and live, you do not need them again in day-to-day operations.
+
+**The onboarding sequence is:**
+
+```
+Register → Verify Email → Submit KYB Documents → KYC Check → Request API Keys → Go Live Review
+```
+
+All onboarding endpoints are available in the **sandbox** environment so you can complete the full flow before touching production.
+
+---
+
+## Base URL
+
+| Environment | Base URL |
+|-------------|----------|
+| Sandbox | `https://dev-api-partner.onecluster.co` |
+| Production | `https://api-partner.onecluster.co` |
+
+---
+
+## Authentication During Onboarding
+
+The **Register** and **Verify Email** endpoints are public — they require no API key.
+
+All subsequent onboarding endpoints (KYB submission, status checks) require a **Bearer token** obtained from the registration step, until your API key is issued.
+
+```http
+Authorization: Bearer <registration_token>
+```
+
+---
+
+## Endpoints
+
+<Note>
+  The interactive playground below is powered by the OpenAPI specification. Click **Try it** on any endpoint, fill in the fields, and send a live request to the sandbox.
+</Note>
+
+### Register Business
+
+`POST /v1/onboarding/register`
+
+Creates a new business account on the platform. You provide your business name, email, and contact details. The platform sends a verification email immediately after this call succeeds.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `business_name` | string | Yes | Legal registered name of your business |
+| `email` | string | Yes | Primary contact email (must be a real inbox — a verification code is sent here) |
+| `phone` | string | Yes | Business phone number in international format (e.g., `+2348012345678`) |
+| `country` | string | Yes | Two-letter country code — `NG` for Nigeria |
+| `business_type` | string | Yes | One of: `sole_proprietor`, `partnership`, `limited_liability`, `public_company` |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `business_id` | Unique ID for your business — save this |
+| `registration_token` | Short-lived token used in subsequent onboarding calls |
+| `email_verification_required` | Always `true` — check your inbox |
+
+---
+
+### Verify Email
+
+`POST /v1/onboarding/verify-email`
+
+Confirms that the email address provided during registration belongs to you. Enter the 6-digit code that was emailed to you.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `business_id` | string | Yes | From the register response |
+| `code` | string | Yes | 6-digit code from the verification email |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `verified` | `true` when the code matches |
+| `next_step` | Always `kyb_documents` — proceed to document upload |
+
+---
+
+### Submit KYB Documents
+
+`POST /v1/onboarding/kyb`
+
+Upload your business verification documents. KYB stands for **Know Your Business** — the process banks use to confirm that your company is real and legitimate.
+
+**Accepted document types:**
+
+| Document | Description |
+|----------|-------------|
+| `cac_certificate` | CAC Certificate of Incorporation from the Corporate Affairs Commission |
+| `cac_7` | CAC Form 7 — list of directors |
+| `cac_2` | CAC Form 2 — statement of share capital |
+| `tax_identification` | Tax Identification Number (TIN) certificate |
+| `utility_bill` | Recent utility bill for business address (not older than 3 months) |
+| `directors_id` | Government-issued ID for each director |
+
+Documents must be uploaded as **base64-encoded strings** in the request body. Accepted formats: PDF, JPG, PNG. Maximum 5 MB per file.
+
+<Warning>
+  All documents are encrypted with AES-256-CBC before storage. Never send raw document data over an unencrypted connection.
+</Warning>
+
+---
+
+### Get Onboarding Status
+
+`GET /v1/onboarding/status`
+
+Check where your business is in the onboarding process at any time.
+
+**Possible status values:**
+
+| Status | Meaning |
+|--------|---------|
+| `pending_email_verification` | Waiting for email to be confirmed |
+| `pending_kyb_review` | Documents submitted, under review (1–3 business days) |
+| `kyb_approved` | Documents accepted, proceed to API key creation |
+| `kyb_rejected` | Documents rejected — see `rejection_reasons` in the response |
+| `active` | Fully onboarded and live |
+| `suspended` | Account temporarily suspended — contact support |
+
+---
+
+### Create API Key
+
+`POST /v1/onboarding/api-keys`
+
+Once your KYB is approved, generate your first API key. This key is what you will use to authenticate all future API calls.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | A label for this key (e.g., `production-app`, `mobile-backend`) |
+| `environment` | string | Yes | `sandbox` or `production` |
+| `permissions` | array | Yes | List of permission scopes (e.g., `accounts:read`, `payments:write`) |
+
+**What you get back:**
+
+The full API key is shown **once only** in this response. Copy and store it securely immediately — it cannot be retrieved again.
+
+| Field | Description |
+|-------|-------------|
+| `key_id` | Permanent identifier for this key |
+| `api_key` | The secret key value — store this immediately |
+| `created_at` | Timestamp of creation |
+| `permissions` | Confirmed list of granted permissions |
+
+---
+
+## Error Codes
+
+All onboarding errors follow the [RFC 7807 Problem Details](/api-reference/errors) format.
+
+| HTTP Status | Error Code | Meaning |
+|-------------|------------|---------|
+| 400 | `VALIDATION_ERROR` | One or more fields are missing or incorrectly formatted |
+| 409 | `EMAIL_ALREADY_REGISTERED` | This email is already linked to an existing business account |
+| 410 | `VERIFICATION_CODE_EXPIRED` | The 6-digit code has expired — request a new one |
+| 422 | `DOCUMENT_REJECTED` | A submitted document failed automated checks |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests — slow down and retry |
+
+---
+
+## Full API Reference
+
+The full interactive playground for all Onboarding endpoints is available in the API Reference tab. Select **Onboarding** from the tag filter to see only onboarding endpoints.
+
+<Card title="Register Business" icon="play" href="/api-reference/post-api-auth-register">
+  Try the registration endpoint live in the browser
+</Card>
+<Card title="Verify Email" icon="check" href="/api-reference/post-api-auth-verify-email-code">
+  Try the email verification endpoint live in the browser
+</Card>

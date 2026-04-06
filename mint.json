@@ -1,0 +1,267 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Union Bank BaaS",
+  "logo": {
+    "dark": "/images/logo-dark.svg",
+    "light": "/images/logo-light.svg",
+    "href": "https://ubn.onecluster.co"
+  },
+  "favicon": "/images/favicon.svg",
+  "colors": {
+    "primary": "#003087",
+    "light": "#4A90D9",
+    "dark": "#00205B",
+    "anchors": {
+      "from": "#003087",
+      "to": "#4A90D9"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Status",
+      "url": "https://api-partner.onecluster.co/api/v1/status"
+    },
+    {
+      "name": "Support",
+      "url": "mailto:baas-support@unionbank.ng"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started Free",
+    "url": "https://dev-ubn-ui.onecluster.co/auth/signup"
+  },
+  "tabs": [
+    {
+      "name": "Documentation",
+      "url": "/"
+    },
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Sandbox Portal",
+      "icon": "flask",
+      "url": "https://dev-ubn-ui.onecluster.co"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/UBN-Project/UBN"
+    },
+    {
+      "name": "Changelog",
+      "icon": "clock",
+      "url": "/resources/changelog"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "key-concepts",
+        "glossary"
+      ]
+    },
+    {
+      "group": "Onboarding",
+      "pages": [
+        "onboarding/overview",
+        "onboarding/register",
+        "onboarding/verify-email",
+        "onboarding/kyb-documents",
+        "onboarding/kyc-verification",
+        "onboarding/api-keys",
+        "onboarding/go-live"
+      ]
+    },
+    {
+      "group": "Products",
+      "pages": [
+        "products/virtual-accounts",
+        "products/payments",
+        "products/collections",
+        "products/kyc",
+        "products/webhooks"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/overview",
+        "api-reference/authentication",
+        "api-reference/errors"
+      ]
+    },
+    {
+      "group": "Health & Status",
+      "pages": [
+        {
+          "openapi": "GET /health"
+        },
+        {
+          "openapi": "GET /status"
+        }
+      ]
+    },
+    {
+      "group": "Onboarding Endpoints",
+      "pages": [
+        "api-reference/onboarding",
+        {
+          "openapi": "POST /api/Auth/register"
+        },
+        {
+          "openapi": "POST /api/Auth/verifyEmailCode"
+        }
+      ]
+    },
+    {
+      "group": "API Keys",
+      "pages": [
+        {
+          "openapi": "GET /api/v1/partners/{partnerId}/api-keys"
+        },
+        {
+          "openapi": "POST /api/v1/partners/{partnerId}/api-keys"
+        },
+        {
+          "openapi": "POST /api/v1/partners/{partnerId}/api-keys/{keyId}/rotate"
+        },
+        {
+          "openapi": "DELETE /api/v1/partners/{partnerId}/api-keys/{keyId}"
+        }
+      ]
+    },
+    {
+      "group": "Production Access",
+      "pages": [
+        {
+          "openapi": "POST /api/v1/partners/{partnerId}/production-access-request"
+        },
+        {
+          "openapi": "GET /api/v1/partners/{partnerId}/production-access-request"
+        }
+      ]
+    },
+    {
+      "group": "Accounts Endpoints",
+      "pages": [
+        "api-reference/accounts",
+        {
+          "openapi": "POST /api/v1/accounts"
+        },
+        {
+          "openapi": "GET /api/v1/accounts/{accountNumber}"
+        },
+        {
+          "openapi": "GET /api/v1/accounts/{accountNumber}/statement"
+        }
+      ]
+    },
+    {
+      "group": "Payments Endpoints",
+      "pages": [
+        "api-reference/payments",
+        {
+          "openapi": "POST /api/v1/payments/account-enquiry"
+        },
+        {
+          "openapi": "POST /api/v1/payments/transfer"
+        },
+        {
+          "openapi": "GET /api/v1/payments/{transactionRef}/status"
+        }
+      ]
+    },
+    {
+      "group": "Collections Endpoints",
+      "pages": [
+        "api-reference/collections",
+        {
+          "openapi": "POST /api/v1/collections/accounts"
+        },
+        {
+          "openapi": "GET /api/v1/collections/accounts/{accountNumber}/transactions"
+        },
+        {
+          "openapi": "POST /api/v1/collections/webhooks"
+        },
+        {
+          "openapi": "GET /api/v1/collections/webhooks"
+        },
+        {
+          "openapi": "DELETE /api/v1/collections/webhooks/{webhookId}"
+        },
+        {
+          "openapi": "GET /api/v1/collections/webhooks/deliveries"
+        }
+      ]
+    },
+    {
+      "group": "KYC Endpoints",
+      "pages": [
+        "api-reference/kyc",
+        {
+          "openapi": "POST /api/v1/kyc/bvn/verify"
+        },
+        {
+          "openapi": "POST /api/v1/kyc/nin/verify"
+        },
+        {
+          "openapi": "POST /api/v1/kyc/cac/lookup"
+        }
+      ]
+    },
+    {
+      "group": "Security & Compliance",
+      "pages": [
+        "security/overview",
+        "security/ndpr-compliance",
+        "security/rate-limits"
+      ]
+    },
+    {
+      "group": "Resources",
+      "pages": [
+        "resources/sandbox-guide",
+        "resources/postman",
+        "resources/changelog",
+        "resources/support"
+      ]
+    }
+  ],
+  "api": {
+    "baseUrl": ["https://dev-api-partner.onecluster.co", "https://api-partner.onecluster.co"],
+    "auth": {
+      "method": "key",
+      "name": "Authorization",
+      "inputPrefix": "ApiKey "
+    },
+    "playground": {
+      "mode": "show"
+    }
+  },
+  "openapi": [
+    "api-reference/openapi.yaml"
+  ],
+  "footerSocials": {
+    "website": "https://unionbank.ng",
+    "linkedin": "https://linkedin.com/company/union-bank-of-nigeria"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "search": {
+    "prompt": "Search docs, APIs, guides..."
+  },
+  "modeToggle": {
+    "default": "light"
+  }
+}

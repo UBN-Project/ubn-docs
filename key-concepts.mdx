@@ -1,0 +1,193 @@
+---
+title: "Key Concepts"
+description: "The ideas behind the UBN BaaS platform, explained in plain English with real-world analogies. Read this before diving into the product guides."
+---
+
+<Info>
+  You do not need to memorise this page before you start building. Treat it as a reference — come back to it when you encounter a term that needs more explanation.
+</Info>
+
+Understanding these concepts will help you make better decisions when building your integration. Each one comes with a plain-English explanation and a real-world analogy.
+
+---
+
+## 1. Partners
+
+**What it means:** A "partner" is the official term for any company or individual that has registered on the UBN BaaS platform and been approved to use the APIs. Once you complete onboarding, you become a partner.
+
+**The analogy:** Think of it like opening a business account at Union Bank — but instead of walking in with documents and getting a debit card, you register online and get an API key. Your partner account holds your settings, your API keys, your virtual accounts, and your transaction history.
+
+**Why it matters:** Our system tracks everything by partner. Your API key is tied to your partner account. Your virtual accounts belong to your partner account. When you contact support, we look you up by your Partner ID — a unique reference number we assign when you register.
+
+---
+
+## 2. Virtual Accounts
+
+**What it means:** A virtual account is a real Nigerian bank account — with a real 10-digit account number — that lives inside your master Union Bank account. You can create hundreds or thousands of them programmatically.
+
+**The analogy:** Imagine renting a floor in an office building. The building has one front door and one address (your master account), but your floor has its own room numbers and its own mailboxes. Each virtual account is a mailbox — it has its own address (account number), and money sent to that address lands in the right place, even though it all shares the same building.
+
+**Two types:**
+
+| Type | Description | Best for |
+|---|---|---|
+| **Static Account** | Stays open until you explicitly close it | Dedicated accounts for individual customers |
+| **Dynamic Account** | Closes automatically after a set time or after a payment is received | One-time payment collection |
+
+**Why it matters:** Virtual accounts let you track money at a granular level. Instead of asking customers to add a payment reference, you give each customer their own account number. When money arrives, you know immediately who sent it and what it was for — no manual matching required.
+
+---
+
+## 3. Sandbox vs Production
+
+**What it means:**
+
+- **Sandbox** is a testing environment that behaves exactly like the real system — but nothing is real. No real money moves. No real bank accounts are opened. You can break things, test edge cases, and make mistakes without any consequences.
+- **Production** is the live environment. Real money moves. Real bank accounts are opened. Real customers are affected.
+
+**The analogy:** Think of sandbox as a flight simulator and production as flying a real plane. A flight simulator looks and feels just like the cockpit, and you can crash it a hundred times with no harm done. But once you are in a real plane, every action has real consequences.
+
+**The two base URLs:**
+
+| Environment | Base URL | API Key prefix |
+|---|---|---|
+| Sandbox | `https://dev-api-partner.onecluster.co` | `ubn_sb_` |
+| Production | `https://api-partner.onecluster.co` | `ubn_pk_` |
+
+<Warning>
+  Never mix them up. Using a production API key in test code — or pointing your test app at the production URL — will cause real transactions. Keep your environments strictly separate.
+</Warning>
+
+---
+
+## 4. API Keys
+
+**What it means:** An API key is a long string of characters (like a password) that identifies your application to our system. Every API request you make must include your key so we know who is sending it.
+
+**The analogy:** Your API key is like a key card for an office building. You swipe it at the door, the system recognises it, and you get in. If someone else gets hold of your key card, they can walk in as you. That is why you keep it secret.
+
+**Two types of API keys:**
+
+| Type | Prefix | Environment | Use |
+|---|---|---|---|
+| Sandbox key | `ubn_sb_` | Sandbox only | Development and testing |
+| Production key | `ubn_pk_` | Production only | Live, real-money transactions |
+
+**How to include your key in a request:**
+
+Add it as an HTTP header on every request:
+
+```
+Authorization: ApiKey ubn_sb_your_key_here
+```
+
+**Key rotation:** For security, you should rotate (replace) your API keys periodically — or immediately if you suspect they have been exposed. We will warn you 72 hours before a mandatory rotation is required. See the [API Keys guide](/onboarding/api-keys) for instructions.
+
+---
+
+## 5. Idempotency
+
+**What it means:** Idempotency (pronounced "eye-dem-POH-ten-see") means that making the same request multiple times produces exactly the same result as making it once. It prevents duplicate transactions.
+
+**The analogy:** Imagine you write a cheque to pay someone, hand it to the bank, and then the internet cuts out before you get a confirmation. Did the payment go through? You are not sure, so you hand in the same cheque again — but the bank looks at the cheque, sees it has already been processed, and says "this was already done" rather than paying twice. The cheque acts as your idempotency key.
+
+**How it works in the API:** For any request that creates or modifies something (creating an account, sending a payment), you must include a header:
+
+```
+X-Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000
+```
+
+This value is a UUID (a unique ID you generate). If your request times out and you retry it with the same UUID, our system recognises the duplicate and returns the original result instead of processing it again.
+
+<Warning>
+  Generate a new idempotency key for each new, distinct operation. Reuse the same key only when you are retrying after a failure. If you reuse the same key for two genuinely different payments, only the first will be processed.
+</Warning>
+
+---
+
+## 6. KYB — Know Your Business
+
+**What it means:** KYB is the process by which we verify that the company applying to use the platform is real, legally registered, and compliant with Nigerian financial regulations.
+
+**The analogy:** Before a landlord rents you a commercial space, they check that your business is registered, that the directors are real people, and that there are no legal issues. KYB is the same thing — we check your documentation before we give you access to banking infrastructure.
+
+**What we check:**
+
+- Your CAC (Corporate Affairs Commission) registration number and certificate
+- The identity documents of your company's directors
+- Your company's address and contact details
+- Your intended use case (what kind of product are you building?)
+
+**Who completes this?** Typically the CEO, CTO, or compliance officer of your company. It is a one-time process during onboarding.
+
+---
+
+## 7. KYC — Know Your Customer
+
+**What it means:** KYC is the process of verifying that your end-users (your customers) are who they say they are. As a partner, you are responsible for carrying out KYC on your own customers before allowing them to use financial features in your product.
+
+**The analogy:** When a customer opens an account at any bank, the bank asks for their ID, verifies it, and keeps a record. If you are building a savings app on top of UBN BaaS, you play the role of the bank — you must verify your customers. We provide the tools to do it.
+
+**What we can verify:**
+
+| Document | What it is | API endpoint |
+|---|---|---|
+| **BVN** | Bank Verification Number — an 11-digit number issued by the CBN linking a person to all their bank accounts | `/api/v1/kyc/verify/bvn` |
+| **NIN** | National Identification Number — an 11-digit number issued by NIMC identifying a Nigerian citizen | `/api/v1/kyc/verify/nin` |
+| **CAC** | Corporate Affairs Commission registration — confirms a company is registered in Nigeria | `/api/v1/kyc/verify/cac` |
+
+See the [KYC product guide](/products/kyc) for complete instructions and code examples.
+
+---
+
+## 8. Webhooks
+
+**What it means:** A webhook is a way for our system to notify your system the moment something happens — like money arriving in one of your virtual accounts. Instead of you repeatedly asking "has anything happened?" (which wastes resources and creates delays), we call your server proactively.
+
+**The analogy:** Imagine you are waiting for a table at a restaurant. You have two options: stand at the front desk and ask every five minutes "is my table ready?", or give them your phone number and ask them to text you when it is ready. A webhook is the text message — you get notified the moment the event happens, without constantly checking.
+
+**How it works:**
+
+1. You tell us a URL on your server (your "webhook endpoint"), for example: `https://yourapp.com/webhooks/ubn`
+2. When an event happens (e.g., a payment arrives, an account is created), we send an HTTP POST request to that URL with the event details as JSON
+3. Your server reads the data and does whatever it needs to do (update a database, notify a user, release an order)
+
+**Events you can subscribe to:**
+
+- `payment.completed` — A payment you sent has been confirmed
+- `payment.failed` — A payment you sent did not go through
+- `collection.received` — Money has arrived in one of your collection accounts
+- `account.created` — A virtual account has been successfully created
+- `kyc.verified` — A KYC check has been completed
+
+See the [Webhooks product guide](/products/webhooks) for full setup instructions, including how to verify that webhook requests really come from us.
+
+---
+
+## 9. Circuit Breaker
+
+**What it means:** A circuit breaker is a safety mechanism that automatically pauses requests when our system detects that one of the downstream services (like the core banking API) is under stress or behaving unexpectedly. When the problem clears, the circuit breaker "resets" and normal operations resume.
+
+**The analogy:** Think of the fuse box in your home. When there is an electrical fault — say a power surge — the fuse blows to protect your appliances. Once the fault is fixed, you reset the fuse and everything works again. The circuit breaker does the same for our API: it stops traffic to a struggling service to prevent a cascade of failures, then lets traffic through again once the service recovers.
+
+**What this means for you:** If a request gets a response header `X-Circuit-Breaker-Open: true`, it means that particular service is temporarily paused. Do not hammer the API with retries — wait a few seconds, then try again. Your code should handle this gracefully. The [Payments guide](/products/payments) and [Collections guide](/products/collections) include example retry logic.
+
+---
+
+## 10. NDPR — Nigeria Data Protection Regulation
+
+**What it means:** The NDPR is Nigeria's main data privacy law. It governs how organisations collect, store, process, and share personal data (names, phone numbers, BVN numbers, addresses — anything that can identify a person).
+
+**The analogy:** Just as a doctor must keep patient records confidential and follow medical privacy laws, anyone handling personal financial data in Nigeria must follow NDPR rules. We comply with NDPR on our end. By using this platform, you agree to comply on yours.
+
+**What this means for you as a partner:**
+
+- Only collect personal data you genuinely need
+- Tell your customers what data you collect and why (in your privacy policy)
+- Keep that data secure
+- Do not sell or share it without consent
+- Delete it when it is no longer needed
+
+<Note>
+  You agreed to NDPR data handling obligations when you checked the consent box during registration. If you have compliance questions, email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) or consult your company's legal team. See our [NDPR Compliance page](/security/ndpr-compliance) for full details.
+</Note>

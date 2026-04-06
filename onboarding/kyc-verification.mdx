@@ -1,0 +1,176 @@
+---
+title: "Step 4: Identity Verification (KYC)"
+description: "Automated identity checks that run after your documents are approved"
+---
+
+<Note>
+  This is Step 4 of 6 in the onboarding journey. [View the full onboarding overview →](/onboarding/overview)
+</Note>
+
+## What is KYC?
+
+**KYC** stands for **Know Your Customer**. In the context of UBN BaaS onboarding, it means verifying the identity of the people who run your company.
+
+Step 3 (KYB) confirmed that your *company* is real and legally registered. Step 4 confirms that the *directors* of that company are real, identifiable people who are who they claim to be. Both checks are required by the CBN before we can give you access to live banking infrastructure.
+
+KYC runs automatically — you do not need to do anything during this step. When a UBN compliance officer approves your KYB documents, our system triggers the identity checks immediately. You will receive an email notification with the outcome.
+
+---
+
+## What checks run automatically?
+
+Three checks run in sequence when your KYB documents are approved. They are all automated and typically complete within seconds.
+
+<Steps>
+  <Step title="BVN check — Nigeria Interbank Settlement System">
+    Your director's **BVN (Bank Verification Number)** is verified against the **NIBSS** database.
+
+    **NIBSS (Nigeria Interbank Settlement System)** is the organisation that runs the infrastructure connecting all banks in Nigeria. Among other things, NIBSS maintains the central BVN database — every BVN registered in the Nigerian banking system is stored here. When we verify a BVN, we are sending a query to NIBSS asking: "Does this BVN exist? Does the name attached to it match the director name we have on file?"
+
+    The check verifies:
+    - The BVN exists in the NIBSS database
+    - The name attached to the BVN matches the director's name on your CAC records
+    - The BVN is not flagged for any regulatory issues
+  </Step>
+
+  <Step title="NIN check — National Identity Management Commission">
+    Your director's **NIN (National Identification Number)** is verified against the **NIMC** database.
+
+    **NIMC (National Identity Management Commission)** is the Nigerian government agency that issues National Identification Numbers to Nigerian citizens and legal residents. Every NIN is tied to biometric data (fingerprints and a photograph) and demographic information.
+
+    The check verifies:
+    - The NIN exists in the NIMC database
+    - The name and date of birth attached to the NIN are consistent with the BVN record and your submitted documents
+    - The NIN is active and not revoked
+  </Step>
+
+  <Step title="CAC lookup — Corporate Affairs Commission">
+    Your company's **RC number (Registration Certificate number)** is verified against the **CAC (Corporate Affairs Commission)** public registry.
+
+    The CAC is the Nigerian government body responsible for registering and regulating companies. Their public registry lists every registered company in Nigeria, including the company name, RC number, registration date, and directors.
+
+    The check verifies:
+    - Your RC number exists in the CAC registry
+    - The company name registered with the CAC matches the name on your account
+    - The director whose BVN and NIN you provided is listed as a director in the CAC records for your company
+  </Step>
+</Steps>
+
+<Info>
+  All three checks run automatically and in parallel. The entire process takes seconds. You will not see intermediate results — you receive a single email notification when all three pass (or when one fails, explaining which check failed and why).
+</Info>
+
+---
+
+## Privacy protection
+
+KYC involves sensitive personal data, and we treat it accordingly.
+
+We verify your identity — we do not store or display it in ways that could expose it. Specifically:
+
+- **BVN:** We never store or display your full BVN. After verification, only a masked value is retained (for example, `****5678`).
+- **NIN:** Same masking as BVN. The full number is used only during the verification call and is never written to our permanent storage.
+- **Date of birth:** Used as a cross-check during verification. Never stored or displayed in our platform.
+- **Biometric data:** We do not receive or store biometric data. Fingerprint and photograph comparisons are handled entirely within NIMC's systems.
+
+All data handled during KYC is processed under our **NDPR (Nigeria Data Protection Regulation)** compliance framework. You can read the full details on the [NDPR Compliance page](/security/ndpr-compliance).
+
+---
+
+## What happens when KYC passes?
+
+When all three checks pass, two things happen immediately:
+
+1. Your account status updates to `SANDBOX_ACTIVE`
+2. A sandbox API key is generated automatically and emailed to you
+
+You will receive an email from `noreply@unionbank.ng` with the subject **"UBN BaaS — Your sandbox API key is ready"**. The email contains your API key and a link to the API keys page in your portal.
+
+**You can start building immediately.** The sandbox environment is fully functional — you can create virtual accounts, simulate payments, test collections, and trigger webhooks without any further approval.
+
+[Continue to Step 5: Get Your API Keys →](/onboarding/api-keys)
+
+---
+
+## What happens when KYC fails?
+
+If any of the three checks fails, you will receive an email from `baas-support@unionbank.ng` explaining which check failed and what to do next. Your account status will update to `KYC_FAILED`.
+
+<Warning>
+  A KYC failure does not mean your account is permanently rejected. It means a specific check returned an unexpected result. Most failures are caused by data entry issues or record mismatches that can be corrected.
+</Warning>
+
+### Common KYC failure reasons and how to fix them
+
+<AccordionGroup>
+  <Accordion title="BVN name mismatch">
+    **What this means:** The name attached to the BVN in the NIBSS database does not match the director's name in your CAC records or on the ID you submitted.
+
+    This is the most common KYC failure. It happens because:
+
+    - The director's name is spelled differently in different records (for example, "Muhammad" vs "Mohammed", or "Okonkwo" vs "Okonkwu")
+    - The director's name on their BVN was registered under a nickname or shortened form
+    - The director legally changed their name after opening their bank account but has not updated their BVN records
+
+    **How to fix it:**
+    - Contact any Nigerian bank branch where the director holds an account and request a BVN name correction. You will need to bring a valid ID.
+    - Once the BVN name has been updated in the NIBSS database (this typically takes 3–5 business days), email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your `partnerId` and request a KYC re-run.
+  </Accordion>
+
+  <Accordion title="BVN not found">
+    **What this means:** The BVN you provided during registration does not exist in the NIBSS database, or it was entered incorrectly.
+
+    **How to fix it:**
+    - Confirm the BVN is exactly 11 digits. Dial `*565*0#` on the director's registered mobile number to retrieve the BVN directly from NIBSS.
+    - If the BVN is correct and this error persists, it may indicate a temporary issue with the NIBSS query service. Contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) and we will attempt a manual re-run.
+  </Accordion>
+
+  <Accordion title="NIN not found or NIN name mismatch">
+    **What this means:** The NIN does not exist in the NIMC database, or the name attached to it does not match your other records.
+
+    **How to fix it:**
+    - Confirm the NIN is correct by visiting a NIMC enrolment centre or self-service kiosk with a valid ID.
+    - If there is a name mismatch, visit a NIMC centre to request a record correction.
+    - After the correction is processed (3–10 business days), email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) to request a re-run.
+  </Accordion>
+
+  <Accordion title="Director not found in CAC records">
+    **What this means:** The CAC registry does not list the director whose BVN and NIN you provided as a current director of your company.
+
+    **How to fix it:**
+    - Confirm that the director whose identity you provided is listed on your CAC records. You can check at [search.cac.gov.ng](https://search.cac.gov.ng).
+    - If a different director should be used for verification, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) to update the director information on your account.
+    - If the director is listed on your CAC records but the check still fails, contact our support team — there may be a data discrepancy in the CAC registry that requires a formal update.
+  </Accordion>
+
+  <Accordion title="RC number not found in CAC registry">
+    **What this means:** The RC number you provided does not appear in the CAC public registry, or it does not match the company name on your account.
+
+    **How to fix it:**
+    - Verify your RC number at [search.cac.gov.ng](https://search.cac.gov.ng).
+    - Confirm the RC number on your account exactly matches what is shown at the CAC registry — no extra characters, no missing digits.
+    - If there is a genuine discrepancy between your certificate and the CAC registry, contact the CAC directly to have your records corrected.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Frequently asked questions about KYC
+
+<AccordionGroup>
+  <Accordion title="Can I use a co-founder's BVN instead of the registered director's?">
+    Only a person listed as a director in your CAC records can be used for KYC verification. If your co-founder is not listed as a director with the CAC, their BVN and NIN cannot be used. You have two options: use a person who is already a listed CAC director, or update your CAC records to add the co-founder as a director (this takes time — contact a lawyer or accredited CAC agent to do this).
+  </Accordion>
+
+  <Accordion title="How long does KYC take?">
+    The automated checks run within seconds of KYB approval. However, the KYB approval itself can take up to 2 business days (see Step 3). Total elapsed time from document submission to KYC completion is typically the same as the KYB review time.
+  </Accordion>
+
+  <Accordion title="Will KYC reveal my personal data to anyone?">
+    No. The KYC checks are queries from our system to NIBSS, NIMC, and the CAC. The results confirm identity — they do not export personal data to us. We receive a pass/fail result and a masked identifier, not your full personal record. See the [NDPR Compliance page](/security/ndpr-compliance) for the full data handling policy.
+  </Accordion>
+
+  <Accordion title="Can KYC be re-run without re-submitting documents?">
+    Yes. If a KYC check fails and you correct the underlying data issue (for example, a BVN name correction), you can request a KYC re-run without re-uploading your documents. Email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your `partnerId` and the words "KYC re-run request" in the subject line.
+  </Accordion>
+</AccordionGroup>

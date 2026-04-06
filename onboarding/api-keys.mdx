@@ -1,0 +1,258 @@
+---
+title: "Step 5: Your API Keys"
+description: "Understanding, securing, and managing your API keys"
+---
+
+<Note>
+  This is Step 5 of 6 in the onboarding journey. [View the full onboarding overview →](/onboarding/overview)
+</Note>
+
+## What is an API key?
+
+An **API key** is a unique secret code that identifies your application when it makes requests to the UBN BaaS API.
+
+Think of it like a key card for a secure office building. Without the key card, you cannot get through the door. With the key card, the building's system knows exactly who you are, which areas you are allowed to enter, and logs every door you open. Your API key works the same way — every request you make is authenticated, attributed to your account, and rate-limited according to your plan.
+
+When you include your API key in a request, our system knows:
+- Which partner account the request belongs to
+- Whether the request is authorised for the operation being attempted
+- How to bill for usage
+- How to apply your specific rate limits and permissions
+
+---
+
+## Two types of API keys
+
+You will have two separate API keys at different points in your journey.
+
+<CardGroup cols={2}>
+  <Card title="Sandbox Key" icon="flask">
+    **Format:** `ubn_sb_` followed by a random string
+
+    **Example:** `ubn_sb_aBcDeFgH1234567890XyZ`
+
+    **Environment:** Sandbox only (`https://dev-api-partner.onecluster.co`)
+
+    Automatically issued when your KYC verification passes. Free to use. No real money moves. No real accounts are created. Use this key to build and test your entire integration.
+
+    You can generate as many sandbox keys as you need, at no cost.
+  </Card>
+
+  <Card title="Production Key" icon="building-columns">
+    **Format:** `ubn_pk_` followed by a random string
+
+    **Example:** `ubn_pk_aBcDeFgH1234567890XyZ`
+
+    **Environment:** Production only (`https://api-partner.onecluster.co`)
+
+    Issued only after your production access request is approved (Step 6). Real money moves. Real accounts are created. Treat this key with extreme care.
+
+    Never use a production key in test or development code.
+  </Card>
+</CardGroup>
+
+<Warning>
+  The key prefix tells you which environment it belongs to. `ubn_sb_` = sandbox. `ubn_pk_` = production. If you are ever unsure which key you are using, check the first 7 characters. Running test code with a production key causes real transactions.
+</Warning>
+
+---
+
+## The golden rule: your key is shown only once
+
+When a new API key is generated, it is displayed in full exactly one time — immediately after creation.
+
+**We do not store your full API key.** We store only a **cryptographic hash** of the key — a mathematical fingerprint that lets us verify a key is valid without ever knowing what the key actually is. This means:
+
+- If you copy the key and save it securely at the moment of creation, you are fine
+- If you close the window before copying the key, the key is gone permanently — you will need to generate a new one
+- If you contact support and ask us to retrieve your key, we genuinely cannot — the full key does not exist anywhere in our system
+
+This design is intentional. It means that even if our database were compromised, attackers could not extract your API keys from our records.
+
+<Warning>
+  The moment a new API key is displayed in the portal or returned in an API response, copy it immediately and save it in a secure location. You will not see the full key again.
+</Warning>
+
+---
+
+## How to store your key safely
+
+Keeping your API key secure is your responsibility. Here are the rules, from most important to least.
+
+### Never put your key in code
+
+If your API key is in your source code, it will end up in your version control history (Git), and it is a matter of time before it is exposed — whether through a public repository, a leaked code review, or an accidentally shared file.
+
+```javascript
+// WRONG — never put your key in code
+const apiKey = "ubn_sb_aBcDeFgH1234567890XyZ";
+
+fetch("https://dev-api-partner.onecluster.co/api/v1/accounts", {
+  headers: { "Authorization": `ApiKey ${apiKey}` }
+});
+```
+
+```javascript
+// RIGHT — load from an environment variable
+// An environment variable is a value stored in your operating system or
+// deployment platform, separate from your code. Your code reads it at
+// runtime without ever containing the secret itself.
+const apiKey = process.env.UBN_API_KEY;
+
+fetch("https://dev-api-partner.onecluster.co/api/v1/accounts", {
+  headers: { "Authorization": `ApiKey ${apiKey}` }
+});
+```
+
+### Never commit your key to Git
+
+Even if you load the key from an environment variable in your code, you might accidentally commit a `.env` file (a file where environment variables are stored locally) to Git. Prevent this by adding `.env` to your `.gitignore` file:
+
+```bash
+# .gitignore
+.env
+.env.local
+.env.production
+```
+
+### Use a secret manager in production
+
+For production deployments, use a dedicated secret manager rather than environment variables on the server. These services store secrets encrypted, provide audit logs of who accessed what, and let you rotate secrets without redeploying your application.
+
+Recommended options:
+
+| Platform | Secret manager |
+|----------|----------------|
+| AWS | AWS Secrets Manager or AWS Systems Manager Parameter Store |
+| Google Cloud | Google Secret Manager |
+| Azure | Azure Key Vault |
+| Any platform | HashiCorp Vault |
+| Vercel / Netlify | Built-in environment variable management in the platform dashboard |
+
+---
+
+## How to use your key in every request
+
+Include your API key in the `Authorization` header of every API request. The format is `ApiKey` followed by a space and then your key.
+
+```bash
+curl https://dev-api-partner.onecluster.co/api/v1/accounts \
+  -H "Authorization: ApiKey ubn_sb_your_key_here" \
+  -H "Content-Type: application/json"
+```
+
+In JavaScript (Node.js):
+
+```javascript
+const response = await fetch("https://dev-api-partner.onecluster.co/api/v1/accounts", {
+  method: "GET",
+  headers: {
+    "Authorization": `ApiKey ${process.env.UBN_API_KEY}`,
+    "Content-Type": "application/json"
+  }
+});
+```
+
+In Python:
+
+```python
+import requests
+import os
+
+response = requests.get(
+    "https://dev-api-partner.onecluster.co/api/v1/accounts",
+    headers={
+        "Authorization": f"ApiKey {os.environ['UBN_API_KEY']}",
+        "Content-Type": "application/json"
+    }
+)
+```
+
+<Note>
+  Every request that modifies data (POST, PUT, DELETE) also requires an **idempotency key** in the `Idempotency-Key` header. An idempotency key is a unique string you generate per request that prevents duplicate operations if your network retries a request. See the [API Reference: Authentication](/api-reference/authentication) page for details.
+</Note>
+
+---
+
+## Key rotation
+
+**Key rotation** means generating a new API key and retiring the old one. It is a security practice — like changing the locks on an office when an employee leaves. You should rotate your API keys:
+
+- Every 90 days as routine security hygiene
+- Immediately when a team member with key access leaves your organisation
+- Immediately when you suspect a key may have been exposed
+
+### The 72-hour grace period
+
+When you rotate a key, the old key does not stop working immediately. It remains valid for a **72-hour grace period** — 3 days during which both the old key and the new key are accepted.
+
+This gives you time to:
+1. Generate the new key
+2. Update your production environment with the new key
+3. Redeploy your application
+4. Confirm the new key is working correctly
+5. Let the old key expire naturally at the end of the 72 hours
+
+<Tip>
+  The 72-hour grace period is designed to prevent downtime during rotation. Use it, but do not rely on it as a permanent state — both keys being valid simultaneously doubles your exposure window. Complete the rotation as quickly as possible after generating the new key.
+</Tip>
+
+### How to rotate a key via the API
+
+**Endpoint:** `POST /api/v1/keys/{keyId}/rotate`
+
+```bash
+curl -X POST https://dev-api-partner.onecluster.co/api/v1/keys/key_abc123/rotate \
+  -H "Authorization: ApiKey ubn_sb_your_current_key_here" \
+  -H "Content-Type: application/json"
+```
+
+The response will contain the new API key in full. Copy it immediately — it will not be shown again.
+
+---
+
+## Key revocation
+
+**Key revocation** immediately and permanently invalidates an API key. Unlike rotation (which has a 72-hour grace period), revocation takes effect instantly. Use it when:
+
+- You believe your key has been leaked or compromised
+- You find your key in a public Git repository
+- A team member left your organisation and may have retained a copy of the key
+- You receive a security alert about suspicious usage on your account
+
+<Warning>
+  Revocation is immediate and irreversible. Any system still using the revoked key will fail instantly. Before revoking a key in production, ensure you have a replacement key ready to deploy. If you need to revoke immediately due to a security incident, accept the brief downtime and prioritise security.
+</Warning>
+
+### How to revoke a key via the API
+
+**Endpoint:** `POST /api/v1/keys/{keyId}/revoke`
+
+```bash
+curl -X POST https://dev-api-partner.onecluster.co/api/v1/keys/key_abc123/revoke \
+  -H "Authorization: ApiKey ubn_sb_your_current_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "Key exposed in public repository"}'
+```
+
+---
+
+## Managing keys via the API
+
+A full set of key management endpoints is available.
+
+| Operation | Method | Endpoint | Description |
+|-----------|--------|----------|-------------|
+| List all keys | GET | `/api/v1/keys` | Returns all API keys for your partner account, with metadata (created, last used, status). Full key values are never returned — only prefixes and IDs. |
+| Generate a new key | POST | `/api/v1/keys` | Creates a new API key. The full key value is returned only in this response. |
+| Get key details | GET | `/api/v1/keys/{keyId}` | Returns metadata for a specific key. |
+| Rotate a key | POST | `/api/v1/keys/{keyId}/rotate` | Generates a new key and starts the 72-hour grace period on the old key. |
+| Revoke a key | POST | `/api/v1/keys/{keyId}/revoke` | Immediately and permanently invalidates a key. |
+
+For full request and response schemas, see the [API Reference: Authentication](/api-reference/authentication) page.
+
+---
+
+You now have your sandbox API key and you know how to use it safely. Start building and testing your integration. When you are ready to handle real transactions, move on to Step 6.
+
+[Continue to Step 6: Go Live →](/onboarding/go-live)

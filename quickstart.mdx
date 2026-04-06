@@ -1,0 +1,227 @@
+---
+title: "Quickstart: Your First API Call in 5 Minutes"
+description: "Go from zero to a successful API response in 5 minutes. No banking knowledge required."
+---
+
+<Info>
+  This guide assumes nothing. If you have never called an API before, that is fine — we explain every step and every term as we go.
+</Info>
+
+By the end of this guide you will have:
+
+- A registered sandbox account
+- A working API key
+- Made a real API call and seen a real response
+
+Let's go.
+
+---
+
+## Step 1: Create your account
+
+Go to [dev-ubn-ui.onecluster.co/auth/signup](https://dev-ubn-ui.onecluster.co/auth/signup) and fill in the registration form.
+
+**What you will need:**
+
+| Field | What to enter | Notes |
+|---|---|---|
+| Company name | Your registered business name | Must match your CAC certificate exactly |
+| Email address | A corporate email (e.g. you@yourcompany.ng) | Free email services like Gmail will be rejected |
+| Password | A strong password | Minimum 8 characters, at least one number and one symbol |
+| Phone number | Your Nigerian mobile number | Format: +2348012345678 |
+| UBN account number | Your Union Bank account number | This links your partner account to your bank account |
+| Terms & NDPR consent | Check both boxes | NDPR is Nigeria's data protection law — you agree to handle customer data responsibly |
+
+<Note>
+  The sandbox is completely free and uses no real money. You are not signing up for a paid service at this stage.
+</Note>
+
+Once you submit the form, two things happen immediately:
+
+1. Your account is created with the status `PENDING_EMAIL_VERIFICATION`
+2. We send a one-time password (OTP) to the email address you provided
+
+Keep the page open — you will need it in the next step.
+
+---
+
+## Step 2: Verify your email
+
+Check your inbox for an email from `noreply@unionbank.ng`. It contains a **6-digit OTP code** (OTP stands for One-Time Password — a short code that expires after a few minutes and can only be used once, like a ticket with a time limit).
+
+Enter that code on the verification screen to confirm your email address.
+
+**If the code does not arrive within 2 minutes:**
+
+<Tip>
+  Check your spam or junk folder first — automated emails sometimes land there. If it is not there, click "Resend code" on the verification screen. Each new code invalidates the previous one.
+</Tip>
+
+**If the code has expired:**
+
+OTP codes expire after 10 minutes. If yours has expired, click "Resend code" to get a fresh one.
+
+Once your email is verified, your account status moves to `PENDING_KYB_REVIEW`. This means your documents are under review by our onboarding team. In sandbox, this review is fast — often within a few hours during business hours.
+
+<Info>
+  KYB stands for Know Your Business. It is the process of verifying that your company is real and legitimate. Think of it as the due diligence a bank does before opening a business account. We explain it in full on the [Onboarding: KYB Documents](/onboarding/kyb-documents) page.
+</Info>
+
+---
+
+## Step 3: Get your sandbox API key
+
+Once your account is approved, log in to the sandbox portal at [dev-ubn-ui.onecluster.co](https://dev-ubn-ui.onecluster.co).
+
+Navigate to **Settings → API Keys** and click **Generate sandbox key**.
+
+You will see a key that looks like this:
+
+```
+ubn_sb_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+```
+
+**What is an API key?**
+
+Think of an API key like the password for your application. Just as your email password proves that *you* are logging in to your email, an API key proves that *your application* is making a request to our API. Every request you send must include this key so we know it is coming from you.
+
+<Warning>
+  Copy your API key and store it somewhere safe immediately — like in a password manager or your application's environment variables. We only show the full key once. If you lose it, you will need to generate a new one and update all your code.
+
+  Never paste your API key into a public place: not in a GitHub repo, not in a Slack message, not in a forum post. Anyone who has your key can make API calls on your behalf.
+</Warning>
+
+Sandbox keys always start with `ubn_sb_`. Production keys start with `ubn_pk_`. This makes it easy to tell them apart at a glance.
+
+---
+
+## Step 4: Make your first API call
+
+Now the fun part. You are going to call the `/health` endpoint — this is a simple check that confirms the API is online and your connection is working.
+
+**What is curl?**
+
+`curl` is a command-line tool for making web requests. Think of it like a web browser, but instead of showing you a webpage, it shows you the raw data the server sends back. It comes pre-installed on Mac, Linux, and Windows 10+. To check if you have it, open your terminal and type `curl --version`.
+
+**What is a terminal?**
+
+A terminal (also called a command prompt, shell, or console) is a text-based window where you type commands. On Mac, search for "Terminal" in Spotlight. On Windows, search for "Command Prompt" or "PowerShell".
+
+### Option A: Using curl (command line)
+
+Open your terminal, paste the command below, and replace `ubn_sb_your_key_here` with the actual key you generated in Step 3:
+
+```bash
+curl https://dev-api-partner.onecluster.co/health \
+  -H "Authorization: ApiKey ubn_sb_your_key_here"
+```
+
+The `-H` flag adds a **header** to your request. A header is extra information you attach to a request — in this case, you are attaching your API key so the server knows who is asking.
+
+### Option B: Using JavaScript (fetch)
+
+If you prefer JavaScript, paste this into your browser's developer console or a Node.js script:
+
+```javascript
+const apiKey = "ubn_sb_your_key_here"; // Replace with your actual key
+
+const response = await fetch("https://dev-api-partner.onecluster.co/health", {
+  method: "GET",
+  headers: {
+    "Authorization": `ApiKey ${apiKey}`
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+### The response you should see
+
+If everything is working, the `/health` endpoint will respond with the text:
+
+```
+Healthy
+```
+
+<Note>
+  The `/health` endpoint returns a plain-text response of `Healthy`. For detailed system status information, call the `/status` endpoint instead, which returns a JSON breakdown:
+</Note>
+
+```json
+{
+  "status": "healthy",
+  "gatewayVersion": "1.0.0",
+  "downstreamBankingApi": "healthy"
+}
+```
+
+Let's read the `/status` response together:
+
+- `"status": "healthy"` — The API gateway (the front door of the system) is online and accepting requests.
+- `"gatewayVersion": "1.0.0"` — The version of the software running the gateway. Useful to know when reading release notes.
+- `"downstreamBankingApi": "healthy"` — The connection between the gateway and Union Bank's core banking system is working. If this said `"degraded"`, it would mean payments might be slow; if it said `"unhealthy"`, no transactions would be processing.
+
+**You just made your first successful API call. Welcome to UBN BaaS.**
+
+---
+
+## Step 5: What's next
+
+<CardGroup cols={2}>
+  <Card title="Open a Virtual Account" icon="building-columns" href="/products/virtual-accounts">
+    Create a real Nigerian bank account number for a customer or use case. This is usually the first thing partners build.
+  </Card>
+  <Card title="Send a Payment" icon="paper-plane" href="/products/payments">
+    Transfer money to any Nigerian bank account. Includes idempotency, retries, and real-time status updates.
+  </Card>
+  <Card title="Set Up Collections" icon="arrow-down-to-bracket" href="/products/collections">
+    Receive money from customers with dedicated collection accounts. Perfect for marketplaces and savings apps.
+  </Card>
+  <Card title="Verify an Identity" icon="id-card" href="/products/kyc">
+    Check BVN, NIN, and CAC numbers to confirm your customers are who they say they are.
+  </Card>
+</CardGroup>
+
+---
+
+## Having trouble?
+
+<AccordionGroup>
+  <Accordion title="I got a 401 Unauthorized error">
+    This means your API key was not recognised. Check:
+    1. Did you replace `ubn_sb_your_key_here` with your actual key?
+    2. Is there a typo or extra space in the key?
+    3. Is the header format exactly `Authorization: ApiKey your_key_here` (with a space between `ApiKey` and the key itself)?
+    4. Did you generate a **sandbox** key (starts with `ubn_sb_`)? Production keys will not work in the sandbox environment.
+  </Accordion>
+  <Accordion title="I got a connection error or 'could not resolve host'">
+    This is usually a network issue. Check:
+    1. Are you connected to the internet?
+    2. Is your company firewall blocking outbound HTTPS requests to `dev-api-partner.onecluster.co`? Ask your IT team to whitelist this domain on port 443.
+    3. Try opening [https://dev-api-partner.onecluster.co/health](https://dev-api-partner.onecluster.co/health) in your web browser. If that fails too, the issue is your network, not your code.
+  </Accordion>
+  <Accordion title="I never received my verification email">
+    1. Check your spam and junk folders.
+    2. Make sure you used a corporate email address. Gmail, Yahoo, Outlook personal accounts are rejected at registration.
+    3. Wait 2 minutes and click "Resend code".
+    4. If the email still does not arrive after resending, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your registered email address and company name.
+  </Accordion>
+  <Accordion title="My account is stuck on PENDING_KYB_REVIEW">
+    KYB (business document) review happens during business hours (Monday–Friday, 8am–5pm WAT). If it has been more than 1 business day since you submitted your documents, email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng). Include your Partner ID (shown in your dashboard) so we can locate your account quickly.
+  </Accordion>
+  <Accordion title="curl is not installed on my computer">
+    On **Mac**: Open Terminal and type `brew install curl` (requires [Homebrew](https://brew.sh)).
+
+    On **Windows**: curl is included with Windows 10 build 1803 and later. Open Command Prompt and type `curl --version` to check. If it is not found, download it from [curl.se/windows](https://curl.se/windows).
+
+    On **Linux**: Run `sudo apt install curl` (Ubuntu/Debian) or `sudo yum install curl` (CentOS/RHEL).
+
+    Alternatively, use the JavaScript example above, which runs in any browser.
+  </Accordion>
+  <Accordion title="I see a response but it does not match what you showed">
+    If the status shows `"degraded"` or `"unhealthy"`, there may be a temporary issue with one of our systems. Check [dev-api-partner.onecluster.co/status](https://dev-api-partner.onecluster.co/status) for a full breakdown, or visit our status page linked in the top navigation bar.
+  </Accordion>
+</AccordionGroup>
+
+Still stuck? Email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) — include the error message you received and the command or code you ran.

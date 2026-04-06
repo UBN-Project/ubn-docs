@@ -1,0 +1,299 @@
+---
+title: "Identity Verification (KYC)"
+description: "Verify the identity of your customers using BVN, NIN, and CAC lookups"
+---
+
+## What is KYC and Why Does it Matter?
+
+KYC stands for **Know Your Customer**. Before you allow anyone to move money through your application, Nigerian law requires you to verify that they are who they claim to be.
+
+This is not just a technical requirement — it protects you, your customers, and the financial system from fraud, money laundering, and identity theft. The Central Bank of Nigeria (CBN) KYC regulations apply to every financial service that processes payments on behalf of customers.
+
+We give you APIs to complete these checks instantly, without your customers having to visit a branch or scan physical documents.
+
+<Info>
+  KYC checks are required before you may credit or debit a customer's account for the first time. Build verification into your customer onboarding flow, not as an afterthought.
+</Info>
+
+---
+
+## Three Types of Verification
+
+<CardGroup cols={3}>
+  <Card title="BVN Lookup" icon="fingerprint">
+    **Bank Verification Number.** An 11-digit number issued by the CBN that links a Nigerian individual to all their registered bank accounts. The most widely used identity check in Nigerian fintech.
+  </Card>
+  <Card title="NIN Lookup" icon="id-card">
+    **National Identification Number.** An 11-digit number issued by NIMC (National Identity Management Commission). Tied to the National Identity Card and the biometric database.
+  </Card>
+  <Card title="CAC Lookup" icon="building">
+    **Corporate Affairs Commission.** Verify that a business is legitimately registered in Nigeria. Use this when onboarding business customers, merchants, or vendors.
+  </Card>
+</CardGroup>
+
+---
+
+## Privacy by Design
+
+We are deliberate about what data we return — and what we do not.
+
+**We never return:**
+- Full BVN or NIN digits
+- Full date of birth
+- Biometric data
+
+**We return instead:**
+- Masked BVN/NIN (e.g. `*****6789`)
+- A name match confidence score (0.0 to 1.0)
+- Basic demographic signals (e.g. whether the date of birth year matches)
+
+This approach is designed for **NDPR compliance** (Nigeria Data Protection Regulation). Full PII is never stored on our servers after the check completes. Your system receives only what is necessary to make a pass/fail decision.
+
+---
+
+## Understanding the Name Match Score
+
+Every BVN and NIN lookup returns a `nameMatchScore` — a number between 0 and 1.
+
+| Score | Meaning |
+|---|---|
+| `0.95` – `1.00` | Very high confidence — names match closely |
+| `0.80` – `0.94` | Good match — minor variation (e.g. middle name omitted, shortened first name) |
+| `0.60` – `0.79` | Partial match — review manually before proceeding |
+| `0.00` – `0.59` | Low confidence — likely a mismatch, reject |
+
+<Warning>
+  We recommend rejecting any verification with a `nameMatchScore` below `0.80`. You may want to allow customers with scores between 0.60 and 0.79 to submit a government-issued ID for manual review instead of outright rejection.
+</Warning>
+
+---
+
+## BVN Verification
+
+Use BVN as your primary identity check for individual customers.
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST https://dev-api-partner.onecluster.co/api/v1/kyc/bvn \
+      -H "Authorization: ApiKey ubn_sb_your_key_here" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "bvn": "12345678901",
+        "firstName": "Adebayo",
+        "lastName": "Johnson",
+        "dateOfBirth": "1990-06-15"
+      }'
+    ```
+  </Tab>
+  <Tab title="JavaScript (fetch)">
+    ```javascript
+    const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/kyc/bvn', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'ApiKey ubn_sb_your_key_here',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        bvn: '12345678901',
+        firstName: 'Adebayo',
+        lastName: 'Johnson',
+        dateOfBirth: '1990-06-15',
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.data.nameMatchScore >= 0.80) {
+      // Proceed with onboarding
+    } else {
+      // Reject or request manual review
+    }
+    ```
+  </Tab>
+</Tabs>
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "verified": true,
+    "maskedBvn": "*****78901",
+    "nameMatchScore": 0.97,
+    "dateOfBirthMatch": true,
+    "verificationRef": "KYC-BVN-20260325-001"
+  }
+}
+```
+
+---
+
+## NIN Verification
+
+Use NIN as a **secondary check** alongside BVN, or as the primary check when BVN is unavailable (e.g. for customers who are new to banking).
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST https://dev-api-partner.onecluster.co/api/v1/kyc/nin \
+      -H "Authorization: ApiKey ubn_sb_your_key_here" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "nin": "98765432101",
+        "firstName": "Adebayo",
+        "lastName": "Johnson",
+        "dateOfBirth": "1990-06-15"
+      }'
+    ```
+  </Tab>
+  <Tab title="JavaScript (fetch)">
+    ```javascript
+    const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/kyc/nin', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'ApiKey ubn_sb_your_key_here',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        nin: '98765432101',
+        firstName: 'Adebayo',
+        lastName: 'Johnson',
+        dateOfBirth: '1990-06-15',
+      }),
+    });
+
+    const result = await response.json();
+    ```
+  </Tab>
+</Tabs>
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "verified": true,
+    "maskedNin": "*****32101",
+    "nameMatchScore": 0.94,
+    "dateOfBirthMatch": true,
+    "verificationRef": "KYC-NIN-20260325-001"
+  }
+}
+```
+
+---
+
+## CAC Lookup (Business Verification)
+
+When onboarding a business customer, use CAC lookup to confirm the company is registered with the Corporate Affairs Commission and retrieve its registered details.
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST https://dev-api-partner.onecluster.co/api/v1/kyc/cac \
+      -H "Authorization: ApiKey ubn_sb_your_key_here" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "rcNumber": "RC1234567",
+        "companyName": "Acme Technologies Limited"
+      }'
+    ```
+  </Tab>
+  <Tab title="JavaScript (fetch)">
+    ```javascript
+    const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/kyc/cac', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'ApiKey ubn_sb_your_key_here',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        rcNumber: 'RC1234567',
+        companyName: 'Acme Technologies Limited',
+      }),
+    });
+
+    const result = await response.json();
+    ```
+  </Tab>
+</Tabs>
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "verified": true,
+    "rcNumber": "RC1234567",
+    "registeredName": "ACME TECHNOLOGIES LIMITED",
+    "nameMatchScore": 0.98,
+    "status": "ACTIVE",
+    "registrationDate": "2018-04-10",
+    "companyType": "Private Limited Company",
+    "verificationRef": "KYC-CAC-20260325-001"
+  }
+}
+```
+
+---
+
+## When to Use Each Check
+
+| Scenario | Recommended check |
+|---|---|
+| Individual customer signing up | BVN (primary) |
+| Individual with no BVN yet | NIN (primary) |
+| High-risk transaction above a threshold | BVN + NIN (both) |
+| Business / merchant onboarding | CAC lookup + director BVN |
+| Repeat customer with existing verification | Skip — store `verificationRef`, do not re-check |
+
+<Tip>
+  Store the `verificationRef` returned from each successful check. If a customer has already been verified, you do not need to call the API again. Re-checking costs you API quota and adds unnecessary latency to the customer experience.
+</Tip>
+
+---
+
+## Handling Verification Results
+
+<AccordionGroup>
+  <Accordion title="Match (nameMatchScore ≥ 0.80)">
+    The identity check passed. Store the `verificationRef` against the customer record and proceed with onboarding. You do not need to store any PII from the check — the ref is your audit trail.
+  </Accordion>
+  <Accordion title="Partial Match (nameMatchScore 0.60 – 0.79)">
+    The names are similar but not a strong match. Common causes: the customer's registered bank name uses a different format (e.g. initials instead of full name), or a middle name is included in one record but not the other.
+
+    **Recommended approach:** Do not auto-approve. Ask the customer to upload a government-issued ID for manual review, or ask them to confirm their name exactly as it appears on their BVN/NIN record.
+  </Accordion>
+  <Accordion title="No Match (nameMatchScore < 0.60)">
+    The names do not match. Either the wrong BVN/NIN was entered, or the customer's identity information does not match.
+
+    **Recommended approach:** Reject the verification attempt. Allow the customer to re-enter their BVN/NIN in case of a typo. Log the attempt for fraud monitoring purposes.
+  </Accordion>
+  <Accordion title="Check Failed (API error)">
+    The verification service could not be reached, or the BVN/NIN was not found in the registry. This is different from a no-match — it means the check could not be completed.
+
+    **Recommended approach:** Retry once after a short delay. If it fails again, surface a friendly error to the customer and allow them to try again later. Do not block the customer permanently for a transient API failure.
+
+    HTTP 422 means the BVN/NIN format is invalid (check the length and that it contains only digits). HTTP 404 means the BVN/NIN was not found in the registry.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Rate Limits
+
+| Endpoint | Limit |
+|---|---|
+| `POST /api/v1/kyc/bvn` | 100 requests per hour per API key |
+| `POST /api/v1/kyc/nin` | 100 requests per hour per API key |
+| `POST /api/v1/kyc/cac` | 200 requests per hour per API key |
+
+If you expect higher volumes (e.g. a large onboarding campaign), contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) in advance to have your limits reviewed.
+
+<Note>
+  Rate limits apply per API key, not per customer. If you are running a high-volume batch verification (e.g. verifying an existing customer base), spread requests over time or request a temporary limit increase.
+</Note>
