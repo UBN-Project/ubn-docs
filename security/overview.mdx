@@ -1,0 +1,262 @@
+---
+title: "Security Overview"
+description: "How we protect your data and how you protect your integration"
+---
+
+Security is a shared responsibility. We handle the infrastructure side — encryption, audit logs, key management, and isolation. You handle the application side — how you store credentials, verify webhooks, and protect your own endpoints. This page covers both.
+
+## How We Protect You
+
+### API Key Hashing
+
+When you generate an API key, we immediately run it through a one-way mathematical process called an **Argon2id hash**. Think of it like a fingerprint: we store only the fingerprint, never the original key.
+
+This means:
+- We cannot look up or recover your raw API key after generation.
+- Even if our database were ever compromised, the attacker would get fingerprints — not usable keys.
+- You must copy your key at the moment of generation. We cannot show it again.
+
+### Encryption in Transit (TLS 1.3)
+
+Every request between your application and our API travels over **TLS 1.3**, the latest and most secure version of the Transport Layer Security protocol. TLS encrypts the connection so that anyone observing network traffic between you and us cannot read the data.
+
+Plain HTTP connections are rejected. If you accidentally make a request over `http://`, you will receive a connection error — not a silent fallback to an unencrypted channel.
+
+### Encryption at Rest (AES-256)
+
+Documents you upload during KYB — Certificates of Incorporation, Director IDs, Utility Bills — are encrypted on our storage infrastructure using **AES-256**. This is the same encryption standard used by major banks, healthcare providers, and government agencies globally. A stored file cannot be read without the decryption key, which is managed separately from the data.
+
+### Environment Isolation
+
+**Sandbox and production are completely separate systems.** They do not share a database, a network, or any data. A sandbox API key will be rejected by the production API. A production API key will be rejected by the sandbox API. There is no way to accidentally move sandbox data into production.
+
+### Circuit Breaker Protection
+
+Our APIs are protected by a **circuit breaker** pattern. If an upstream dependency (for example, the NIP payment network) becomes slow or unresponsive, the circuit breaker "trips" and returns a clean error response immediately instead of letting your request hang. This prevents cascading failures and keeps response times predictable under high load.
+
+### WORM Audit Logs
+
+Every action taken on the platform — every API call, every key rotation, every document upload, every payment — is recorded in **WORM logs** (Write Once, Read Many). Once written, these logs cannot be modified or deleted, even by our own administrators. This is a regulatory requirement and also your protection: if a dispute arises, the log is an authoritative and tamper-proof record.
+
+### Continuous Security Scanning
+
+Every change to our codebase is automatically scanned before deployment:
+
+- **SAST (Static Application Security Testing):** scans source code for known vulnerability patterns before the code runs.
+- **DAST (Dynamic Application Security Testing):** scans the running application for vulnerabilities an attacker might exploit at runtime.
+
+A deployment that fails a security scan does not go to production.
+
+---
+
+## How You Protect Your Integration
+
+You own your API keys and your application. The following practices are not optional niceties — they are the minimum baseline for a secure integration.
+
+### Store Keys in Environment Variables
+
+Never write an API key directly into your source code. Instead, read it from an environment variable at runtime.
+
+<Tabs>
+  <Tab title="Node.js">
+    ```javascript
+    // Good — key comes from the environment
+    const apiKey = process.env.UBN_API_KEY;
+
+    // Bad — key is hardcoded in source
+    const apiKey = "sk_live_abc123xyz"; // NEVER do this
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import os
+
+    # Good — key comes from the environment
+    api_key = os.environ.get("UBN_API_KEY")
+
+    # Bad — key is hardcoded in source
+    api_key = "sk_live_abc123xyz"  # NEVER do this
+    ```
+  </Tab>
+  <Tab title=".env file">
+    ```bash
+    # .env file — never commit this file to git
+    UBN_API_KEY=sk_live_abc123xyz
+    UBN_SIGNING_SECRET=whsec_abc123xyz
+    UBN_PARTNER_ID=PRT-0001
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  If a key is committed to a git repository — even in a private repo, even for one second — treat it as compromised. Rotate it immediately. Git history is permanent and can be forked, cloned, or leaked.
+</Warning>
+
+### Keep Keys Out of Git
+
+Add the following to your `.gitignore` before your first commit:
+
+```bash
+# .gitignore
+.env
+.env.local
+.env.production
+*.pem
+secrets/
+config/credentials/
+```
+
+Enable **secret scanning** on your GitHub repository (Settings → Code security → Secret scanning). GitHub will alert you if a key pattern is accidentally committed.
+
+### Rotate Keys Every 90 Days
+
+API keys are credentials, like passwords. Rotate them regularly so that a key that was leaked without your knowledge has a limited window of usefulness.
+
+To rotate a key:
+
+<Steps>
+  <Step title="Generate a new key">
+    In the sandbox portal, navigate to API Keys and generate a new key. Copy it immediately.
+  </Step>
+  <Step title="Update your application">
+    Deploy the new key to your environment variables. Verify the application starts and authenticates correctly.
+  </Step>
+  <Step title="Revoke the old key">
+    Once the new key is confirmed working, revoke the old key in the portal. It is immediately invalid.
+  </Step>
+</Steps>
+
+### Revoke Immediately on Suspected Leak
+
+If you suspect a key has been exposed — it appeared in a log, a colleague shared it over chat, it was committed to git — revoke it in the portal immediately. Do not wait to investigate first. Revoke first, investigate second.
+
+### Verify Webhook Signatures
+
+Every webhook notification we send includes an `X-UBN-Signature` header. This is a cryptographic signature computed from the request body using your webhook signing secret. Before processing any webhook, verify this signature to confirm the request genuinely came from us.
+
+<Tabs>
+  <Tab title="Node.js">
+    ```javascript
+    const crypto = require("crypto");
+
+    function verifyWebhookSignature(rawBody, signature, secret) {
+      const expected = crypto
+        .createHmac("sha256", secret)
+        .update(rawBody, "utf8")
+        .digest("hex");
+
+      // Use timingSafeEqual to prevent timing attacks
+      const expectedBuffer = Buffer.from(expected, "hex");
+      const receivedBuffer = Buffer.from(signature, "hex");
+
+      if (expectedBuffer.length !== receivedBuffer.length) {
+        return false;
+      }
+
+      return crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+    }
+
+    // In your webhook handler
+    app.post("/webhooks/ubn", (req, res) => {
+      const rawBody = req.rawBody; // must be the raw, unparsed body
+      const signature = req.headers["x-ubn-signature"];
+
+      if (!verifyWebhookSignature(rawBody, signature, process.env.UBN_WEBHOOK_SECRET)) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      // Safe to process the event
+      const event = req.body;
+      console.log("Verified event:", event.event_type);
+      res.status(200).json({ received: true });
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import hmac
+    import hashlib
+    import os
+
+    def verify_webhook_signature(raw_body: bytes, signature: str, secret: str) -> bool:
+        expected = hmac.new(
+            secret.encode("utf-8"),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        # Use compare_digest to prevent timing attacks
+        return hmac.compare_digest(expected, signature)
+
+    # In your webhook handler (Flask example)
+    from flask import Flask, request, jsonify
+
+    app = Flask(__name__)
+
+    @app.route("/webhooks/ubn", methods=["POST"])
+    def handle_webhook():
+        raw_body = request.get_data()
+        signature = request.headers.get("X-UBN-Signature", "")
+        secret = os.environ.get("UBN_WEBHOOK_SECRET")
+
+        if not verify_webhook_signature(raw_body, signature, secret):
+            return jsonify({"error": "Invalid signature"}), 401
+
+        event = request.get_json()
+        print("Verified event:", event.get("event_type"))
+        return jsonify({"received": True}), 200
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  Never skip signature verification in production. An endpoint that accepts unverified webhook payloads can be spoofed — an attacker could send fake payment notifications to your system.
+</Warning>
+
+### Use HTTPS for Webhook Endpoints
+
+Your webhook endpoint URL must use `https://`. We will reject webhook registration for plain `http://` URLs. An unencrypted webhook endpoint exposes event payloads — including payment notifications — to anyone who can observe the network traffic.
+
+### Rate Limit Your Own Endpoints
+
+If your application exposes APIs to your own users, apply rate limiting to them. A partner application that forwards requests to us without rate limiting can inadvertently exhaust your quota or create opportunities for abuse. See [Rate Limits and Quotas](/security/rate-limits) for our own limits.
+
+### Keep Your IP Allowlist Current
+
+If you registered IP addresses during go-live, keep that list up to date. When you change servers, add the new IP before removing the old one. Letting your allowlist get stale — especially after a cloud migration or infrastructure change — is a common cause of sudden authentication failures.
+
+---
+
+## Pre-Launch Security Checklist
+
+Run through this checklist before you go live. Every item is a real-world risk, not a formality.
+
+<AccordionGroup>
+  <Accordion title="Credential Management">
+    <Check>API keys stored in environment variables, not in source code</Check>
+    <Check>API keys are NOT present anywhere in your git history</Check>
+    <Check>`.env` files are in `.gitignore`</Check>
+    <Check>Secret scanning is enabled on your repository</Check>
+    <Check>A key rotation schedule (every 90 days) is on your team's calendar</Check>
+  </Accordion>
+  <Accordion title="Webhook Security">
+    <Check>Webhook signature verification is implemented and tested</Check>
+    <Check>All webhook endpoints are served over HTTPS</Check>
+    <Check>Webhook handler returns `200 OK` before doing heavy processing (prevents timeouts)</Check>
+    <Check>Idempotency is implemented — duplicate webhook deliveries do not create duplicate records</Check>
+  </Accordion>
+  <Accordion title="Payment Safety">
+    <Check>Idempotency keys are sent with every payment request</Check>
+    <Check>Payment status is confirmed via webhook or status poll before releasing goods or services</Check>
+    <Check>Your application handles `PENDING` and `FAILED` payment states explicitly</Check>
+  </Accordion>
+  <Accordion title="Infrastructure">
+    <Check>Production IPs are registered in your allowlist</Check>
+    <Check>Your application does not log raw API keys or signing secrets</Check>
+    <Check>HTTPS is enforced on all your own API endpoints</Check>
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Your go-live review includes a security checklist verification. Items left unchecked will delay approval. Complete this list before submitting your production access request.
+</Note>

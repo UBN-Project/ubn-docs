@@ -1,0 +1,366 @@
+---
+title: "Webhooks — Real-Time Notifications"
+description: "Get notified instantly when money arrives or events happen"
+---
+
+## What are Webhooks?
+
+Imagine you ordered a package and you want to know when it arrives. You have two options:
+
+1. **Polling:** Call the courier every 5 minutes to ask "is my package here yet?" — exhausting, slow, and wasteful.
+2. **Push notification:** The courier texts you the moment the package lands at your door.
+
+Webhooks are push notifications for your server. Instead of your application repeatedly calling our API to check whether money has arrived (polling), we call *your* server the moment it happens.
+
+This means your customers see their wallet credited within seconds of a transfer, rather than waiting for your next poll cycle.
+
+---
+
+## Events You Can Subscribe To
+
+| Event | When it fires |
+|---|---|
+| `collection.credit` | Money arrived in one of your collection accounts |
+| `collection.reversal` | A credit that arrived earlier was reversed (sent back to the sender) |
+| `collection.dispute` | A dispute was raised against a transaction in one of your accounts |
+
+<Info>
+  Additional event types may be added over time. Your webhook endpoint should handle unknown event types gracefully — log them and return `200 OK` without taking action. This way, new events we add will never cause your endpoint to error.
+</Info>
+
+---
+
+## Setting Up a Webhook
+
+<Steps>
+  <Step title="Build an HTTPS endpoint on your server">
+    Create a route in your web application that accepts `POST` requests. This is where we will send notifications.
+
+    Requirements for the endpoint:
+    - Must use **HTTPS** (not plain HTTP) — we reject HTTP endpoints for security
+    - Must respond within **30 seconds** — requests that take longer are treated as failures
+    - Must return **HTTP 200** to acknowledge receipt — any other status code (including redirects) is treated as a failure
+    - Must be **idempotent** — we may deliver the same event more than once in rare circumstances (see Retry Behaviour below)
+
+    A minimal endpoint in Node.js:
+
+    ```javascript
+    app.post('/webhooks/ubn', express.raw({ type: 'application/json' }), (req, res) => {
+      // 1. Verify the signature first (critical — see Step 4)
+      // 2. Parse and process the payload
+      // 3. Return 200 immediately
+
+      res.status(200).send('OK');
+    });
+    ```
+  </Step>
+  <Step title="Register your endpoint via the API">
+    Tell us where to send notifications:
+
+    ```bash
+    curl -X POST https://dev-api-partner.onecluster.co/api/v1/collections/webhooks \
+      -H "Authorization: ApiKey ubn_sb_your_key_here" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "url": "https://yourapp.com/webhooks/ubn",
+        "events": ["collection.credit", "collection.reversal", "collection.dispute"],
+        "description": "Production collection notifications"
+      }'
+    ```
+
+    **Response:**
+
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "webhookId": "wh_abc123def456",
+        "url": "https://yourapp.com/webhooks/ubn",
+        "events": ["collection.credit", "collection.reversal", "collection.dispute"],
+        "secret": "whsec_your_webhook_secret_here",
+        "status": "ACTIVE",
+        "createdAt": "2026-03-25T10:00:00+01:00"
+      }
+    }
+    ```
+
+    <Warning>
+      Copy and securely store the `secret` value immediately — it is only shown once at registration. You will use it to verify all incoming webhook requests. If you lose it, you must delete the webhook and register a new one.
+    </Warning>
+  </Step>
+  <Step title="We test-ping your endpoint">
+    During registration, we send a test `POST` request to your URL with a `ping` event. If your endpoint does not respond with `200 OK` within 30 seconds, registration fails and you receive an error.
+
+    Example ping payload:
+
+    ```json
+    {
+      "event": "ping",
+      "data": {
+        "webhookId": "wh_abc123def456",
+        "message": "Webhook registration test"
+      }
+    }
+    ```
+
+    Make sure your endpoint handles the `ping` event and returns `200`. You do not need to do anything with it other than respond.
+  </Step>
+  <Step title="Receive and verify notifications">
+    Once registered, events start arriving. Always verify the `X-Signature` header before processing any payload. See the full verification guide below.
+  </Step>
+</Steps>
+
+---
+
+## Verifying Webhook Authenticity
+
+This is the most important part of your webhook integration. Without signature verification, your endpoint is open to fake notifications — an attacker could send a forged `collection.credit` event and trick your system into crediting a customer without real money arriving.
+
+We compute the `X-Signature` header by running an HMAC-SHA256 hash over the raw request body, using your webhook secret as the key.
+
+<Tabs>
+  <Tab title="JavaScript (Node.js)">
+    ```javascript
+    const crypto = require('crypto');
+
+    function verifyWebhook(rawBody, receivedSignature, secret) {
+      const expected = 'sha256=' + crypto
+        .createHmac('sha256', secret)
+        .update(rawBody)
+        .digest('hex');
+
+      // timingSafeEqual prevents timing attacks.
+      // A timing attack is a technique where an attacker measures how long
+      // your comparison takes to deduce part of the secret string.
+      // timingSafeEqual always takes the same amount of time regardless
+      // of whether the strings match — closing that vulnerability.
+      return crypto.timingSafeEqual(
+        Buffer.from(receivedSignature),
+        Buffer.from(expected)
+      );
+    }
+
+    // Full Express handler
+    app.post('/webhooks/ubn', express.raw({ type: 'application/json' }), (req, res) => {
+      const signature = req.headers['x-signature'];
+      const rawBody = req.body; // Buffer — requires express.raw middleware
+
+      if (!signature || !verifyWebhook(rawBody, signature, process.env.UBN_WEBHOOK_SECRET)) {
+        console.warn('Rejected webhook: invalid signature');
+        return res.status(401).send('Unauthorized');
+      }
+
+      const payload = JSON.parse(rawBody);
+
+      // Handle each event type
+      switch (payload.event) {
+        case 'collection.credit':
+          handleCredit(payload.data);
+          break;
+        case 'collection.reversal':
+          handleReversal(payload.data);
+          break;
+        case 'collection.dispute':
+          handleDispute(payload.data);
+          break;
+        default:
+          console.log('Unknown event type, ignoring:', payload.event);
+      }
+
+      // Respond immediately — do expensive work asynchronously
+      res.status(200).send('OK');
+    });
+    ```
+  </Tab>
+  <Tab title="Python (Flask)">
+    ```python
+    import hmac
+    import hashlib
+    import os
+    from flask import Flask, request, jsonify
+
+    app = Flask(__name__)
+
+    def verify_webhook(raw_body: bytes, received_signature: str, secret: str) -> bool:
+        expected = 'sha256=' + hmac.new(
+            secret.encode(),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        # hmac.compare_digest is the Python equivalent of Node's timingSafeEqual.
+        # It prevents timing attacks by always taking constant time to compare.
+        return hmac.compare_digest(received_signature, expected)
+
+    @app.route('/webhooks/ubn', methods=['POST'])
+    def webhook_handler():
+        signature = request.headers.get('X-Signature', '')
+        raw_body = request.get_data()  # Raw bytes — do not use request.json
+
+        if not verify_webhook(raw_body, signature, os.environ['UBN_WEBHOOK_SECRET']):
+            print('Rejected webhook: invalid signature')
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        payload = request.get_json()
+        event = payload.get('event')
+
+        if event == 'collection.credit':
+            handle_credit(payload['data'])
+        elif event == 'collection.reversal':
+            handle_reversal(payload['data'])
+        elif event == 'collection.dispute':
+            handle_dispute(payload['data'])
+        else:
+            print(f'Unknown event type, ignoring: {event}')
+
+        return '', 200  # Respond immediately
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  Always use `timingSafeEqual` (JavaScript) or `hmac.compare_digest` (Python) for the final comparison — never use `===` or `==`. Standard equality checks can leak information about the signature through timing differences, giving attackers a way to forge valid signatures over many attempts.
+</Warning>
+
+---
+
+## Handling Duplicate Deliveries
+
+In rare cases — such as a network timeout between our servers and yours — we may deliver the same event more than once. Your handler must be **idempotent**: processing the same event twice should produce the same result as processing it once.
+
+The simplest way to achieve this: before processing a webhook, check whether you have already seen this `transactionRef`. If yes, return `200 OK` immediately without re-processing.
+
+```javascript
+async function handleCredit(data) {
+  const alreadyProcessed = await db.transactions.exists({
+    transactionRef: data.transactionRef,
+  });
+
+  if (alreadyProcessed) {
+    console.log('Duplicate webhook received, skipping:', data.transactionRef);
+    return;
+  }
+
+  // Process the credit
+  await db.transactions.create({ transactionRef: data.transactionRef, ... });
+  await creditCustomerWallet(data.accountNumber, data.amount);
+}
+```
+
+---
+
+## Retry Behaviour
+
+If your endpoint returns anything other than `200 OK`, or does not respond within 30 seconds, we retry delivery on this schedule:
+
+| Attempt | Delay after previous failure |
+|---|---|
+| 1st retry | 5 seconds |
+| 2nd retry | 30 seconds |
+| 3rd retry | 5 minutes |
+| 4th retry | 30 minutes |
+| 5th retry | 2 hours |
+| 6th retry | 6 hours |
+| 7th retry | 24 hours |
+
+After all 7 retries are exhausted, we stop. The event is marked as `FAILED` in your delivery history. You can manually replay failed events from the sandbox dashboard or via the API.
+
+<Tip>
+  Return `200 OK` as quickly as possible — ideally before doing any database writes or external API calls. Acknowledge receipt first, then do the work asynchronously. This prevents timeouts on our end from triggering unnecessary retries.
+</Tip>
+
+---
+
+## View Delivery History
+
+Check the status of recent webhook deliveries — useful for debugging:
+
+```bash
+curl -X GET "https://dev-api-partner.onecluster.co/api/v1/collections/webhooks/wh_abc123def456/deliveries?page=1&limit=20" \
+  -H "Authorization: ApiKey ubn_sb_your_key_here"
+```
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "deliveries": [
+      {
+        "deliveryId": "del_xyz789",
+        "event": "collection.credit",
+        "status": "DELIVERED",
+        "attempts": 1,
+        "responseCode": 200,
+        "deliveredAt": "2026-03-25T10:00:02+01:00"
+      },
+      {
+        "deliveryId": "del_abc456",
+        "event": "collection.credit",
+        "status": "FAILED",
+        "attempts": 8,
+        "lastResponseCode": 500,
+        "lastAttemptAt": "2026-03-24T12:00:00+01:00"
+      }
+    ]
+  }
+}
+```
+
+To manually replay a failed delivery:
+
+```bash
+curl -X POST https://dev-api-partner.onecluster.co/api/v1/collections/webhooks/wh_abc123def456/deliveries/del_abc456/replay \
+  -H "Authorization: ApiKey ubn_sb_your_key_here"
+```
+
+---
+
+## Remove a Webhook
+
+```bash
+curl -X DELETE https://dev-api-partner.onecluster.co/api/v1/collections/webhooks/wh_abc123def456 \
+  -H "Authorization: ApiKey ubn_sb_your_key_here"
+```
+
+<Warning>
+  Deleting a webhook is immediate and permanent. Any in-flight events that have not yet been delivered will be dropped. If you are rotating your webhook (e.g. changing URLs), register the new one first and confirm it is working before deleting the old one.
+</Warning>
+
+---
+
+## Testing Webhooks in the Sandbox
+
+During local development, your server is not publicly accessible — so we cannot reach your `localhost:3000`. Two tools solve this:
+
+<AccordionGroup>
+  <Accordion title="webhook.site — simplest option for inspecting payloads">
+    [webhook.site](https://webhook.site) gives you a public HTTPS URL instantly, with no setup. Visit the site, copy the unique URL it gives you, and register that as your webhook URL in the sandbox. Every request we send to it appears in the browser in real time.
+
+    **Best for:** Quickly inspecting what the webhook payload looks like. Not suitable for testing your actual application logic.
+  </Accordion>
+  <Accordion title="ngrok — tunnel to your local server">
+    [ngrok](https://ngrok.com) creates a secure public HTTPS tunnel to your local development server. Install it, run `ngrok http 3000` (replacing 3000 with your local port), and it gives you a public URL like `https://a1b2c3d4.ngrok.io`. Register that URL as your webhook.
+
+    Now when we send a webhook to that URL, it tunnels through ngrok to your local server — so your actual application code handles it, exactly as it would in production.
+
+    ```bash
+    # Install ngrok (macOS with Homebrew)
+    brew install ngrok
+
+    # Start a tunnel to your local server on port 3000
+    ngrok http 3000
+
+    # ngrok will print something like:
+    # Forwarding  https://a1b2c3d4.ngrok.io -> http://localhost:3000
+    # Register https://a1b2c3d4.ngrok.io/webhooks/ubn as your webhook URL
+    ```
+
+    **Best for:** End-to-end testing your full webhook handling logic locally before deploying.
+
+    <Note>
+      The free tier of ngrok gives you a new URL every time you restart it. If you are doing extended testing, note down your webhook ID and update the URL each session, or sign up for a paid ngrok plan that gives you a fixed domain.
+    </Note>
+  </Accordion>
+</AccordionGroup>

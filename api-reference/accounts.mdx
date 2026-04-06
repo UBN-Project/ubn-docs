@@ -1,0 +1,215 @@
+---
+title: "Accounts API"
+description: "Create and manage virtual bank accounts for your customers. Each account has a unique NUBAN number and can send and receive real money."
+---
+
+## Overview
+
+A **virtual account** is a real Nigerian bank account number (NUBAN format) assigned to one of your customers or use cases. Funds deposited into this account appear in your platform's ledger immediately. You can create as many virtual accounts as you need — one per customer, one per transaction, or one per product.
+
+Virtual accounts created in **sandbox** use test NUBANs that do not process real money. Production accounts are fully live.
+
+---
+
+## Base URL
+
+| Environment | Base URL |
+|-------------|----------|
+| Sandbox | `https://dev-api-partner.onecluster.co` |
+| Production | `https://api-partner.onecluster.co` |
+
+---
+
+## Authentication
+
+All Accounts endpoints require an API key in the request header:
+
+```http
+Authorization: ApiKey <your-api-key>
+```
+
+---
+
+## Endpoints
+
+### Create Virtual Account
+
+`POST /v1/accounts`
+
+Creates a new virtual account. The platform generates a unique NUBAN (10-digit Nigerian bank account number) and links it to your business.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `customer_id` | string | Yes | Your internal ID for the customer this account belongs to |
+| `account_name` | string | Yes | Display name for the account (e.g., customer's full name or a label like "Escrow - Order 4521") |
+| `currency` | string | Yes | Always `NGN` (Nigerian Naira) |
+| `type` | string | No | `individual` or `business`. Defaults to `individual` |
+| `metadata` | object | No | Any key-value pairs you want to store alongside this account (e.g., `{"order_id": "ORD-001"}`) |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `account_id` | Unique ID used to reference this account in future API calls |
+| `account_number` | 10-digit NUBAN — the number your customer gives to senders |
+| `bank_name` | Always `Union Bank of Nigeria` |
+| `bank_code` | CBN bank code for Union Bank |
+| `account_name` | Confirmed display name |
+| `status` | `active` — the account is ready immediately |
+
+**Example request:**
+
+```json
+{
+  "customer_id": "cust_8f3a2b",
+  "account_name": "Amina Bello",
+  "currency": "NGN",
+  "type": "individual",
+  "metadata": {
+    "plan": "premium",
+    "signup_date": "2024-01-15"
+  }
+}
+```
+
+**Example response:**
+
+```json
+{
+  "account_id": "acct_9d7e1c",
+  "account_number": "0123456789",
+  "bank_name": "Union Bank of Nigeria",
+  "bank_code": "032",
+  "account_name": "Amina Bello",
+  "currency": "NGN",
+  "status": "active",
+  "created_at": "2024-01-15T10:23:00+01:00"
+}
+```
+
+---
+
+### Get Account Details
+
+`GET /v1/accounts/{account_id}`
+
+Retrieve the current balance and details for a single virtual account.
+
+**Path parameter:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `account_id` | The `account_id` returned when the account was created |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `account_id` | Unique account identifier |
+| `account_number` | 10-digit NUBAN |
+| `account_name` | Display name |
+| `balance` | Current available balance in kobo (1 Naira = 100 kobo). Divide by 100 to get Naira |
+| `ledger_balance` | Total balance including pending transactions |
+| `status` | `active`, `frozen`, or `closed` |
+| `currency` | Always `NGN` |
+
+<Note>
+  Balances are returned in **kobo**, not Naira. A balance of `500000` means ₦5,000.00. This avoids floating-point precision issues in financial calculations.
+</Note>
+
+---
+
+### List Accounts
+
+`GET /v1/accounts`
+
+Returns a paginated list of all virtual accounts under your business.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | `1` | Page number |
+| `per_page` | integer | `20` | Results per page (max 100) |
+| `status` | string | all | Filter by `active`, `frozen`, or `closed` |
+| `customer_id` | string | — | Return only accounts for this customer |
+
+---
+
+### List Account Transactions
+
+`GET /v1/accounts/{account_id}/transactions`
+
+Returns all credits and debits for a specific virtual account, newest first.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `from` | string | — | Start date in `YYYY-MM-DD` format (WAT timezone) |
+| `to` | string | — | End date in `YYYY-MM-DD` format |
+| `type` | string | all | `credit` or `debit` |
+| `page` | integer | `1` | Page number |
+| `per_page` | integer | `20` | Results per page (max 100) |
+
+**Transaction object fields:**
+
+| Field | Description |
+|-------|-------------|
+| `transaction_id` | Unique ID for this transaction |
+| `type` | `credit` (money in) or `debit` (money out) |
+| `amount` | Amount in kobo |
+| `balance_after` | Account balance after this transaction, in kobo |
+| `narration` | Description as it appears on a bank statement |
+| `reference` | Your idempotency key or the sender's reference |
+| `status` | `completed`, `pending`, or `reversed` |
+| `timestamp` | ISO 8601 datetime in WAT (UTC+1) |
+
+---
+
+### Freeze / Unfreeze Account
+
+`PATCH /v1/accounts/{account_id}`
+
+Temporarily prevent an account from sending or receiving funds. Useful for fraud holds or compliance reviews.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | string | Yes | `frozen` to freeze, `active` to unfreeze |
+| `reason` | string | No | Internal reason for the status change (stored in audit log) |
+
+---
+
+### Close Account
+
+`DELETE /v1/accounts/{account_id}`
+
+Permanently closes a virtual account. This action cannot be undone. Any remaining balance must be swept out before closing.
+
+<Warning>
+  Closing an account is permanent. The NUBAN number is decommissioned and cannot be reactivated. Ensure the balance is zero before calling this endpoint.
+</Warning>
+
+---
+
+## Error Codes
+
+| HTTP Status | Error Code | Meaning |
+|-------------|------------|---------|
+| 400 | `VALIDATION_ERROR` | Missing or invalid fields |
+| 404 | `ACCOUNT_NOT_FOUND` | No account with this ID under your business |
+| 409 | `ACCOUNT_ALREADY_CLOSED` | Account has already been closed |
+| 422 | `BALANCE_NOT_ZERO` | Cannot close an account with a remaining balance |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests — see [Rate Limits](/security/rate-limits) |
+
+---
+
+## Full API Reference
+
+<Card title="Open API Playground" icon="play" href="/api-reference">
+  Try Accounts endpoints live in the browser
+</Card>

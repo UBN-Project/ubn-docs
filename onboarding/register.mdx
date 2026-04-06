@@ -1,0 +1,268 @@
+---
+title: "Step 1: Register Your Company"
+description: "Create your partner account on the UBN BaaS platform"
+---
+
+<Note>
+  This is Step 1 of 6 in the onboarding journey. [View the full onboarding overview →](/onboarding/overview)
+</Note>
+
+## What happens during registration?
+
+Registration creates your partner account on the UBN BaaS platform. You provide your company's basic information, agree to the platform terms, and submit the form. Within seconds, you receive a verification email and your account is created in a `PENDING_EMAIL_VERIFICATION` status.
+
+Registration does not give you API access yet — that comes after email verification, document upload, and compliance review. Think of this step as opening the front door. The full process of getting approved to use the platform takes a few more steps, but this is where it starts.
+
+---
+
+## Before you start
+
+Make sure you have the following on hand before filling in the registration form. Having these ready will mean you finish in under 5 minutes.
+
+<AccordionGroup>
+  <Accordion title="What you need for registration">
+    <Check>**Your company's exact legal name** — the name must match your Certificate of Incorporation precisely. Even a small difference (for example, "TechFin Limited" vs "Techfin Ltd") will cause a mismatch during the document review stage.</Check>
+    <Check>**A corporate email address** — an email on your company's own domain (for example, `cto@techfin.ng`). Gmail, Yahoo, and Outlook free accounts are not accepted.</Check>
+    <Check>**Your Union Bank account number** — a 10-digit account number for a Union Bank of Nigeria account that belongs to your company.</Check>
+    <Check>**A director's BVN (Bank Verification Number)** — an 11-digit number. Every Nigerian bank account holder has one. Check your bank app or dial `*565*0#` on your registered phone number to retrieve it.</Check>
+    <Check>**A strong password** — at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special character.</Check>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Step-by-step: filling in the registration form
+
+You can register via the web portal or directly through the API. Both methods create the same account.
+
+### Option A: Register via the web portal
+
+Go to [dev-ubn-ui.onecluster.co/auth/signup](https://dev-ubn-ui.onecluster.co/auth/signup) and fill in the form as described below.
+
+<Steps>
+  <Step title="Company Name">
+    Enter your company's full legal name exactly as it appears on your **Certificate of Incorporation** — the official document issued by the **CAC (Corporate Affairs Commission)** when your company was registered in Nigeria.
+
+    The CAC is the Nigerian government body responsible for registering and regulating businesses. When your company was incorporated, the CAC issued a Certificate of Incorporation that states the company's legal name. That exact name is what you must use here.
+
+    **Why this matters:** During the KYB (Know Your Business) review in Step 3, our compliance team compares the name you register with against the name on your Certificate of Incorporation. A mismatch — even "Limited" vs "Ltd" — causes a rejection.
+  </Step>
+
+  <Step title="Corporate Email Address">
+    Enter an email address on your company's own domain. For example: `partnerships@techfin.ng` or `cto@yourcompany.com`.
+
+    **Why free email addresses (Gmail, Yahoo, Outlook) are rejected:** We need to verify that your business is legitimate. A corporate email address proves your company has its own domain, which is a basic signal of a real operating business. Anyone can open a Gmail account in 60 seconds — a corporate domain requires a registered business to set up.
+
+    This is also a CBN compliance requirement. All BaaS partner accounts must be linked to a verifiable business identity, and a corporate email address is part of that verification.
+
+    <Warning>
+      If you register with a personal email address, your registration will be rejected immediately at the form validation stage. You will need to register again with a corporate address.
+    </Warning>
+  </Step>
+
+  <Step title="Password">
+    Create a password that meets the following requirements:
+
+    - At least 8 characters long
+    - At least one uppercase letter (A–Z)
+    - At least one lowercase letter (a–z)
+    - At least one number (0–9)
+    - At least one special character (`!`, `@`, `#`, `$`, `%`, etc.)
+
+    Do not reuse a password from another service. Store your password in a password manager (such as 1Password, Bitwarden, or LastPass) rather than writing it down or saving it in a spreadsheet.
+  </Step>
+
+  <Step title="UBN Account Number">
+    Enter the 10-digit account number for a Union Bank of Nigeria account that belongs to your company.
+
+    **Why we ask for this:** The UBN BaaS platform links your partner account to an existing Union Bank commercial relationship. This account is used for fee billing, settlement reconciliation, and identity verification. You do not need to maintain a minimum balance in this account for sandbox testing.
+
+    <Info>
+      If your company does not yet have a Union Bank account, you will need to open one before you can complete registration. Contact your nearest Union Bank branch or visit [unionbank.ng](https://unionbank.ng) to begin the account opening process.
+    </Info>
+  </Step>
+
+  <Step title="Director's BVN">
+    Enter the **BVN (Bank Verification Number)** of a company director. A BVN is an 11-digit number that the Central Bank of Nigeria issues to every bank account holder in Nigeria. It is linked to your fingerprints and is used to verify your identity across the Nigerian banking system.
+
+    To find your BVN:
+    - Dial `*565*0#` on the mobile number registered with your bank
+    - Check your bank's mobile app (most display it in the profile section)
+    - Visit any bank branch with a valid ID
+
+    <Warning>
+      Your BVN is sensitive personal data. The UBN BaaS platform uses it only for identity verification. We never display your full BVN in our system — only a masked version (for example, `****5678`). See our [NDPR Compliance page](/security/ndpr-compliance) for details on how we handle personal data.
+    </Warning>
+  </Step>
+
+  <Step title="NDPR Consent">
+    Check the box to give consent for us to process your personal data in accordance with the **NDPR (Nigeria Data Protection Regulation)**.
+
+    The NDPR is Nigeria's data protection law — it is similar to the GDPR in Europe. It governs how organisations collect, store, and use personal data. By checking this box, you acknowledge that we will store and process the information you provide (your name, email, BVN, and documents) for the purpose of verifying your identity and operating your BaaS account.
+
+    You can read our full data handling policy on the [NDPR Compliance page](/security/ndpr-compliance).
+  </Step>
+
+  <Step title="Terms & Conditions">
+    Read and accept the UBN BaaS Platform Terms and Conditions. Key points include:
+
+    - You may only use the platform for lawful business purposes
+    - You are responsible for keeping your API keys secure
+    - You agree to comply with CBN regulations relevant to your use case
+    - Sandbox access is free; production usage is billed according to the current rate card
+
+    The full terms are available at [dev-api-partner.onecluster.co/terms](https://dev-api-partner.onecluster.co/terms).
+  </Step>
+
+  <Step title="CAPTCHA">
+    Complete the CAPTCHA (Completely Automated Public Turing test to tell Computers and Humans Apart). A CAPTCHA is a small puzzle or image challenge that proves you are a human filling in the form, not an automated program or bot. It typically asks you to click images containing a specific object or to type distorted letters.
+
+    If the CAPTCHA fails to load, try refreshing the page. If the problem persists, try a different browser or disable any ad-blocking extensions.
+  </Step>
+</Steps>
+
+---
+
+### Option B: Register via the API
+
+If you prefer to automate registration or are building a white-label flow, you can register directly via the API.
+
+**Endpoint:** `POST /api/Auth/register`
+
+**Base URL:** `https://dev-api-partner.onecluster.co`
+
+```bash
+curl -X POST https://dev-api-partner.onecluster.co/api/Auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyName": "TechFin Limited",
+    "email": "cto@techfin.ng",
+    "password": "SecurePass@2025",
+    "confirmPassword": "SecurePass@2025",
+    "ubAccountNumber": "0123456789",
+    "bvn": "12345678901",
+    "acceptNdpr": true,
+    "acceptTerms": true
+  }'
+```
+
+**Request body fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `companyName` | string | Yes | Full legal name as it appears on your Certificate of Incorporation |
+| `email` | string | Yes | Corporate email address. Free email providers are rejected. |
+| `password` | string | Yes | Must meet the password complexity requirements listed above |
+| `confirmPassword` | string | Yes | Must exactly match the `password` field |
+| `ubAccountNumber` | string | Yes | 10-digit Union Bank account number |
+| `bvn` | string | Yes | 11-digit Bank Verification Number of a company director |
+| `acceptNdpr` | boolean | Yes | Must be `true`. Confirms consent to NDPR data processing. |
+| `acceptTerms` | boolean | Yes | Must be `true`. Confirms acceptance of platform terms. |
+
+---
+
+## What happens after you click "Register"
+
+When your registration is submitted successfully, three things happen immediately:
+
+1. Your partner account is created in the system with a `PENDING_EMAIL_VERIFICATION` status
+2. A verification email with a 6-digit OTP code is sent to the email address you provided
+3. You receive a success response from the API containing your `partnerId`
+
+### Success response
+
+```json
+{
+  "success": true,
+  "message": "Registration successful. Please check your email to verify your account.",
+  "data": {
+    "partnerId": "prt_7f3a9b2c1d4e5f6a",
+    "email": "cto@techfin.ng",
+    "companyName": "TechFin Limited",
+    "status": "PENDING_EMAIL_VERIFICATION",
+    "createdAt": "2025-03-25T10:42:00Z"
+  }
+}
+```
+
+**Understanding the response fields:**
+
+| Field | What it means |
+|-------|---------------|
+| `partnerId` | **Save this immediately.** This is your unique identifier on the UBN BaaS platform. You will use it in many API calls throughout your integration. It is safe to store in your application's configuration — it is not a secret. |
+| `email` | The email address we will send your verification code and all future platform notifications to. |
+| `companyName` | The company name as we received it. Confirm this matches your Certificate of Incorporation exactly. |
+| `status` | The current state of your account. `PENDING_EMAIL_VERIFICATION` means you need to verify your email before anything else can happen. |
+| `createdAt` | The timestamp your account was created, in UTC (Coordinated Universal Time — the global standard time, which is 1 hour behind Nigeria's WAT timezone). |
+
+<Note>
+  Your `partnerId` is not sensitive — it is safe to store in configuration files, environment variables, or logs. However, do not confuse it with your API key, which is sensitive and must be kept secret.
+</Note>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="My corporate email was rejected">
+    The form checks whether your email domain is on a list of known free email providers. If your corporate email is being rejected, it may mean:
+
+    - You entered a typo in the email address (double-check the domain)
+    - Your company uses a subdomain (for example, `name@mail.techfin.ng`) — these are accepted, but confirm the exact format with your IT team
+    - Your domain is very new and is not yet recognised — if this is the case, email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your domain information and we will review it manually
+
+    If you genuinely do not have a corporate email address yet, you need to set one up before registering. Google Workspace starts at $6/user/month and Microsoft 365 Business Basic starts at $6/user/month — both let you use your own company domain.
+  </Accordion>
+
+  <Accordion title="Company name mismatch error">
+    If you receive an error saying your company name does not match our records, this typically means the name you entered does not exactly match what is on file with the CAC.
+
+    To find the exact registered name:
+    - Look at the front page of your Certificate of Incorporation
+    - Visit the CAC public search portal at [search.cac.gov.ng](https://search.cac.gov.ng) and search by your RC number
+    - The name returned by the CAC portal is the name you must use
+
+    Common differences to watch for:
+    - "Limited" vs "Ltd" vs "LTD"
+    - "Nigeria" vs "Nig"
+    - Punctuation (commas, full stops, hyphens)
+    - Abbreviations in the middle of the name
+  </Accordion>
+
+  <Accordion title="UBN account number not found">
+    If the system cannot find your Union Bank account number, check the following:
+
+    - Confirm you are entering exactly 10 digits with no spaces or dashes
+    - Confirm the account is a Union Bank account, not another bank
+    - Confirm the account belongs to your company, not a personal account
+    - If the account was opened recently (within the last 48 hours), it may not yet be visible in the BaaS system — try again the following business day
+
+    If the problem persists, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your account number (it is not sensitive) and we will investigate.
+  </Accordion>
+
+  <Accordion title="BVN validation failed">
+    If your BVN fails validation at registration, it usually means one of three things:
+
+    - The BVN you entered is not 11 digits — count the digits carefully
+    - The BVN belongs to a director whose legal name does not match the company name (BVN validation is a soft check at registration — it is a harder check later at KYC)
+    - There is a temporary issue with the NIBSS BVN lookup service — wait 15 minutes and try again
+
+    If you continue to have trouble, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng).
+  </Accordion>
+
+  <Accordion title="I submitted the form but got no confirmation email">
+    First, wait 5 minutes — delivery can occasionally be delayed. Then:
+
+    1. Check your spam or junk mail folder. The email comes from `noreply@unionbank.ng`.
+    2. Check that you registered with the email address you intended — log in to the portal and confirm the email shown in your profile.
+    3. If the email never arrives after 10 minutes, you can trigger a resend from the portal login page by clicking "Resend verification email".
+
+    If you still have no email after resending, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+Your account is now created. The next step is to verify your email address.
+
+[Continue to Step 2: Verify Your Email →](/onboarding/verify-email)

@@ -1,0 +1,172 @@
+---
+title: "Step 2: Verify Your Email"
+description: "Confirm your email address before uploading documents"
+---
+
+<Note>
+  This is Step 2 of 6 in the onboarding journey. [View the full onboarding overview →](/onboarding/overview)
+</Note>
+
+## Why email verification exists
+
+Before you can upload your company documents or access any part of the platform, you need to prove that you have access to the email address you registered with. This matters for two reasons.
+
+First, it prevents anyone from accidentally registering with someone else's email address. Second, your email is how we send you security alerts, document review results, API key notifications, and production approval updates. Verifying it now means those messages reach the right person.
+
+---
+
+## What to expect in the verification email
+
+Within seconds of completing registration, an email is sent to the address you provided. Here is what to look for:
+
+| Email detail | Value |
+|---|---|
+| **From** | `noreply@unionbank.ng` |
+| **Subject** | `UBN BaaS — Verify your email address` |
+| **Contents** | A 6-digit OTP code and a link to the verification page |
+
+**OTP** stands for **One-Time Password** — a code that can only be used once. Even if someone else sees the code, they cannot use it after you have submitted it. The code expires after **24 hours**, so do not wait too long.
+
+<Tip>
+  Check your spam or junk folder if you do not see the email within 5 minutes. Some corporate email servers apply aggressive filtering to automated messages. If your IT team manages your email, ask them to whitelist `noreply@unionbank.ng`.
+</Tip>
+
+---
+
+## How to submit your verification code
+
+You have two options: use the web portal or submit the code via the API directly.
+
+### Option A: Verify via the web portal
+
+1. Open the verification email and copy the 6-digit code
+2. Go to [dev-api-partner.onecluster.co/verify-email](https://dev-api-partner.onecluster.co/verify-email)
+3. Enter your email address and the 6-digit code
+4. Click **Verify Email**
+
+You will see a confirmation message and your account status will update to `PENDING_KYB_DOCUMENTS`.
+
+---
+
+### Option B: Verify via the API
+
+**Endpoint:** `POST /api/Auth/verifyEmailCode`
+
+**Base URL:** `https://dev-api-partner.onecluster.co`
+
+```bash
+curl -X POST https://dev-api-partner.onecluster.co/api/Auth/verifyEmailCode \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "cto@techfin.ng",
+    "code": "847291"
+  }'
+```
+
+**Request body fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | Yes | The exact email address you registered with |
+| `code` | string | Yes | The 6-digit OTP from the verification email |
+
+### Success response
+
+```json
+{
+  "success": true,
+  "message": "Email verified successfully.",
+  "data": {
+    "partnerId": "prt_7f3a9b2c1d4e5f6a",
+    "email": "cto@techfin.ng",
+    "status": "PENDING_KYB_DOCUMENTS",
+    "verifiedAt": "2025-03-25T10:48:00Z"
+  }
+}
+```
+
+**Understanding the response fields:**
+
+| Field | What it means |
+|-------|---------------|
+| `partnerId` | Your unique partner identifier. This is unchanged from registration. |
+| `email` | The email address that was just verified. |
+| `status` | `PENDING_KYB_DOCUMENTS` means email verification is complete and you are ready for Step 3 — uploading your business documents. |
+| `verifiedAt` | The exact time your email was verified, in UTC. |
+
+---
+
+## What happens next
+
+Your account status is now `PENDING_KYB_DOCUMENTS`. This means:
+
+- You can log in to the portal
+- You can see the document upload section
+- You cannot make authenticated API calls yet (you do not have an API key at this stage — that comes after KYB approval)
+
+The next step is to upload your company's compliance documents.
+
+[Continue to Step 3: Submit KYB Documents →](/onboarding/kyb-documents)
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="I didn't receive the verification email">
+    Try the following steps in order:
+
+    1. **Wait 5 minutes.** Email delivery can occasionally take a few minutes, especially through corporate mail servers.
+    2. **Check your spam or junk folder.** Search for `noreply@unionbank.ng` or `UBN BaaS`.
+    3. **Check your email address.** Log in to the portal and confirm the email address shown in your profile is the one you intended. A typo at registration is a common cause.
+    4. **Request a resend.** On the portal login page, click **Resend verification email** and enter your email address.
+    5. **Check with your IT team.** Some corporate email systems block automated messages from external senders. Ask your IT team to whitelist `noreply@unionbank.ng`.
+
+    If you have tried all of the above and still have no email after 30 minutes, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your registered email address and the time you registered.
+  </Accordion>
+
+  <Accordion title="The code says it has expired">
+    The OTP code is valid for **24 hours** from the time it was sent. If it has expired, you cannot use that code.
+
+    To get a new code:
+    - Go to the portal login page and click **Resend verification email**
+    - Or call `POST /api/Auth/resendVerificationCode` with your email address
+
+    ```bash
+    curl -X POST https://dev-api-partner.onecluster.co/api/Auth/resendVerificationCode \
+      -H "Content-Type: application/json" \
+      -d '{"email": "cto@techfin.ng"}'
+    ```
+
+    A new code will be sent immediately. The old code is invalidated as soon as the new one is generated.
+
+    <Warning>
+      Do not re-register if your code has expired. Re-registering with the same email address will fail. Use the resend option instead.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="The code says it has already been used">
+    An OTP code can only be used once. If you receive a "code already used" error, it means the code was submitted successfully at some point — possibly by you in a different browser tab, or by a team member who also has access to the email inbox.
+
+    Check your account status:
+    - Log in to the portal at [dev-api-partner.onecluster.co](https://dev-api-partner.onecluster.co)
+    - If you see a `PENDING_KYB_DOCUMENTS` status, your email is already verified and you can proceed to Step 3
+
+    If you cannot log in and the code is already used, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng).
+  </Accordion>
+
+  <Accordion title="I entered the code incorrectly too many times">
+    After 5 incorrect attempts, the code is locked for security reasons. You will need to request a new code using the resend option described above.
+
+    If your account is locked, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) to have the lock cleared manually.
+  </Accordion>
+
+  <Accordion title="I registered with the wrong email address">
+    If you registered with an email address you do not have access to, you will not be able to receive the verification code. In this case:
+
+    1. Contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your `partnerId` (from the registration response) and the correct email address you intended to use
+    2. Our team will update the email on your account and trigger a new verification email
+
+    You cannot change your own email address at this stage — it requires manual intervention from our support team.
+  </Accordion>
+</AccordionGroup>

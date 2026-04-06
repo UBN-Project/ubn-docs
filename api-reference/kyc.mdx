@@ -1,0 +1,258 @@
+---
+title: "KYC API"
+description: "Verify your customers' identities using BVN, NIN, and CAC lookups. Required for compliance with CBN regulations on financial services."
+---
+
+## Overview
+
+**KYC** stands for **Know Your Customer**. It is the process of verifying that the people and businesses using your platform are who they claim to be. The CBN (Central Bank of Nigeria) requires all financial platforms to perform KYC checks before allowing customers to transact above certain thresholds.
+
+The Union Bank BaaS KYC API connects to Nigeria's official identity databases so you can verify customers in real-time without building your own integrations.
+
+**What you can verify:**
+
+| Verification Type | What it checks |
+|------------------|----------------|
+| **BVN** (Bank Verification Number) | Name, date of birth, phone number linked to a Nigerian bank account |
+| **NIN** (National Identification Number) | Name, date of birth, photo from Nigeria's national ID register |
+| **CAC** (Corporate Affairs Commission) | Business name, registration status, directors for companies |
+
+---
+
+## Base URL
+
+| Environment | Base URL |
+|-------------|----------|
+| Sandbox | `https://dev-api-partner.onecluster.co` |
+| Production | `https://api-partner.onecluster.co` |
+
+---
+
+## Authentication
+
+All KYC endpoints require an API key:
+
+```http
+Authorization: ApiKey <your-api-key>
+```
+
+Production KYC requests must also be **HMAC-signed** to prevent tampering. See the [Payments API](/api-reference/payments#request-signing-production) for the signing pattern — the same approach applies here.
+
+---
+
+## Data Privacy
+
+KYC results contain sensitive personal data. By using the KYC API, you agree to:
+
+- Store only the minimum data necessary for your compliance requirements.
+- Not share customer identity data with third parties without explicit consent.
+- Comply with the [NDPR (Nigeria Data Protection Regulation)](/security/ndpr-compliance).
+
+KYC results are **not stored** by the platform — only the fact that a check was performed, its outcome, and the timestamp are retained for audit purposes.
+
+---
+
+## Endpoints
+
+### BVN Lookup
+
+`POST /v1/kyc/bvn`
+
+Verify a customer's BVN and retrieve their registered details.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `bvn` | string | Yes | 11-digit Bank Verification Number |
+| `date_of_birth` | string | Yes | Customer's date of birth in `YYYY-MM-DD` format — used to confirm identity |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `verified` | `true` if the BVN exists and the DOB matches |
+| `first_name` | First name as registered |
+| `last_name` | Last name as registered |
+| `middle_name` | Middle name (may be empty) |
+| `date_of_birth` | Registered date of birth |
+| `phone_number` | Phone number linked to the BVN (last 4 digits only for privacy) |
+| `gender` | Registered gender |
+| `verification_id` | Unique ID for this check — keep for your audit logs |
+| `checked_at` | ISO 8601 timestamp of the check |
+
+**Example request:**
+
+```json
+{
+  "bvn": "12345678901",
+  "date_of_birth": "1990-05-20"
+}
+```
+
+**Example response:**
+
+```json
+{
+  "verified": true,
+  "first_name": "Amina",
+  "last_name": "Bello",
+  "middle_name": "Fatima",
+  "date_of_birth": "1990-05-20",
+  "phone_number": "***7890",
+  "gender": "female",
+  "verification_id": "kyc_bvn_3c8e2a",
+  "checked_at": "2024-01-15T11:15:00+01:00"
+}
+```
+
+---
+
+### NIN Lookup
+
+`POST /v1/kyc/nin`
+
+Verify a customer's NIN (National Identification Number) from Nigeria's National Identity Management Commission (NIMC) database.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nin` | string | Yes | 11-digit National Identification Number |
+| `date_of_birth` | string | Yes | Customer's date of birth `YYYY-MM-DD` |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `verified` | `true` if the NIN exists and DOB matches |
+| `first_name` | First name |
+| `last_name` | Last name |
+| `middle_name` | Middle name |
+| `date_of_birth` | Registered date of birth |
+| `gender` | Registered gender |
+| `photo_url` | Temporary URL to the passport photograph (expires in 5 minutes) |
+| `verification_id` | Unique audit reference |
+
+<Warning>
+  The `photo_url` field is a short-lived signed URL. Download and store the image immediately if your compliance process requires it. The URL expires after 5 minutes.
+</Warning>
+
+---
+
+### CAC Business Lookup
+
+`POST /v1/kyc/cac`
+
+Look up a Nigerian company or business name in the Corporate Affairs Commission (CAC) register.
+
+**What you send:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `registration_number` | string | Yes | CAC registration number (e.g., `RC-123456`) |
+
+**What you get back:**
+
+| Field | Description |
+|-------|-------------|
+| `verified` | `true` if the company is registered and active |
+| `company_name` | Registered company name |
+| `registration_number` | CAC registration number |
+| `registration_date` | Date of incorporation |
+| `status` | `active`, `dormant`, or `struck_off` |
+| `company_type` | `private_limited`, `public_limited`, `business_name`, etc. |
+| `directors` | Array of directors (name and director ID for each) |
+| `address` | Registered business address |
+| `verification_id` | Unique audit reference |
+
+---
+
+### Get Verification Result
+
+`GET /v1/kyc/{verification_id}`
+
+Retrieve the result of a previous KYC check using its verification ID. Useful if you need to re-display a result without re-running the check (which incurs a fee).
+
+---
+
+### List Verifications
+
+`GET /v1/kyc`
+
+Returns a paginated audit log of all KYC checks run by your business.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `type` | string | all | `bvn`, `nin`, or `cac` |
+| `from` | string | — | Start date `YYYY-MM-DD` |
+| `to` | string | — | End date `YYYY-MM-DD` |
+| `verified` | boolean | — | Filter by `true` (passed) or `false` (failed) |
+| `page` | integer | `1` | Page number |
+| `per_page` | integer | `20` | Max 100 |
+
+---
+
+## Sandbox Testing
+
+In the sandbox environment, use these test values to simulate different outcomes:
+
+**BVN test values:**
+
+| BVN | DOB | Result |
+|-----|-----|--------|
+| `12345678901` | `1990-05-20` | Verified — returns Amina Bello |
+| `11111111111` | `1985-01-01` | Verified — returns Chidi Okonkwo |
+| `99999999999` | any | Not found — returns `verified: false` |
+| `00000000000` | any | Error — simulates upstream timeout |
+
+**NIN test values:**
+
+| NIN | DOB | Result |
+|-----|-----|--------|
+| `12345678901` | `1990-05-20` | Verified |
+| `99999999999` | any | Not found |
+
+**CAC test values:**
+
+| Registration Number | Result |
+|--------------------|--------|
+| `RC-000001` | Active company returned |
+| `RC-999999` | Not found |
+
+---
+
+## Pricing
+
+Each KYC check is billed per call. Charges are deducted from your platform wallet:
+
+| Check Type | Cost |
+|-----------|------|
+| BVN | ₦15 per call |
+| NIN | ₦20 per call |
+| CAC | ₦25 per call |
+
+Sandbox checks are free — charges only apply in production.
+
+---
+
+## Error Codes
+
+| HTTP Status | Error Code | Meaning |
+|-------------|------------|---------|
+| 400 | `VALIDATION_ERROR` | Missing or invalid BVN/NIN format |
+| 402 | `INSUFFICIENT_WALLET_BALANCE` | Platform wallet does not have enough credit |
+| 404 | `IDENTITY_NOT_FOUND` | BVN/NIN/CAC number not found in the registry |
+| 422 | `DOB_MISMATCH` | Date of birth does not match the registered record |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests |
+| 503 | `NIMC_UNAVAILABLE` | Identity database temporarily unreachable — retry |
+
+---
+
+## Full API Reference
+
+<Card title="Open API Playground" icon="play" href="/api-reference">
+  Try KYC endpoints live in the browser
+</Card>

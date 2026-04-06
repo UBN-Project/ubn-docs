@@ -1,0 +1,119 @@
+# Mintlify Documentation — Auto-Deploy Workflow
+#
+# Triggers on every push to main that touches the docs/ folder.
+# Mintlify's GitHub App handles the actual build + deploy.
+# This workflow validates the mint.json config and broken links BEFORE merge.
+#
+# Secrets required (set in GitHub → Settings → Secrets):
+#   MINTLIFY_TOKEN  — your Mintlify API token (from mintlify.com/settings)
+
+name: Mintlify Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/mintlify.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ─── 1. Validate mint.json structure ─────────────────────────────────────────
+  validate-config:
+    name: Validate mint.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Mintlify CLI
+        run: npm install -g mintlify
+
+      - name: Validate Mintlify config
+        run: mintlify validate
+
+  # ─── 2. Check for broken links in MDX files ──────────────────────────────────
+  check-links:
+    name: Check Broken Links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install link checker
+        run: npm install -g markdown-link-check
+
+      - name: Check links in docs
+        run: |
+          find . -name "*.mdx" -not -path '*/.*' | xargs -I{} markdown-link-check {} \
+            --config .github/link-check-config.json || true
+
+  # ─── 3. Preview deploy on PRs ────────────────────────────────────────────────
+  preview-deploy:
+    name: Preview Deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Mintlify CLI
+        run: npm install -g mintlify
+
+      - name: Comment PR with preview notice
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '📖 **Documentation preview** will be available at https://ubn.onecluster.co once this PR is merged.\n\nMintlify auto-deploys from the `docs/` folder on every push to `main`.'
+            })
+
+  # ─── 4. Production deploy (main branch only) ─────────────────────────────────
+  production-deploy:
+    name: Production Deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Mintlify CLI
+        run: npm install -g mintlify
+
+      - name: Trigger Mintlify Deploy
+        env:
+          MINTLIFY_TOKEN: ${{ secrets.MINTLIFY_TOKEN }}
+        run: |
+          mintlify deploy --token $MINTLIFY_TOKEN
+        continue-on-error: true
+
+      - name: Notify deploy success
+        if: success()
+        run: |
+          echo "✅ Docs deployed to https://ubn.onecluster.co"

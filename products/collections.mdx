@@ -1,0 +1,237 @@
+---
+title: "Collections — Receive Money"
+description: "Set up virtual accounts to collect payments from your customers"
+---
+
+## What is Collections?
+
+Collections solves a specific problem: **how do you know who paid you?**
+
+If you give all your customers one bank account number to transfer money into, you end up with a list of incoming debits and no automatic way to match each credit to a specific customer. You'd have to manually compare names and amounts — error-prone and unscalable.
+
+Collections gives every customer their **own unique account number**. When money arrives, it is already sorted. You know immediately who paid, how much, and for what — because the account number itself carries that information.
+
+---
+
+## Real-World Use Cases
+
+<CardGroup cols={3}>
+  <Card title="Wallet Top-Up" icon="wallet">
+    Assign one permanent (static) collection account per customer when they sign up. Their account number never changes. Whenever they want to add money, they transfer to the same number from their bank.
+  </Card>
+  <Card title="Invoice Payment" icon="file-invoice">
+    When you generate an invoice, create a dynamic collection account linked to that invoice. Set it to expire in 48 hours. When the customer pays, the webhook tells you exactly which invoice was settled.
+  </Card>
+  <Card title="Event Tickets / Orders" icon="ticket">
+    When a customer places an order or buys a ticket, generate a dynamic account for that order. It expires once paid or after a timeout. No manual reconciliation needed.
+  </Card>
+</CardGroup>
+
+---
+
+## How It Works End to End
+
+<Steps>
+  <Step title="Create a collection account">
+    You call our API to create a virtual account. For a static account, you do this once per customer. For a dynamic account, you do this once per invoice or order.
+
+    See the [Virtual Accounts guide](/products/virtual-accounts) for the full create API — collections use the same endpoint. Pass your customer ID or order reference in the `reference` field so it comes back in the webhook.
+  </Step>
+  <Step title="Share the account number with your customer">
+    Display the account number, bank name (Union Bank of Nigeria), and account name to your customer. They can then initiate a transfer from any Nigerian bank — mobile app, internet banking, USSD, or at a branch.
+  </Step>
+  <Step title="Customer transfers money">
+    Your customer sends the money from their own bank. The transfer travels through the Nigerian Interbank Settlement System (NIBSS) — the same network behind every bank transfer in Nigeria.
+  </Step>
+  <Step title="We receive the credit">
+    The money arrives in your master Union Bank account and is attributed to the virtual account number your customer transferred to.
+  </Step>
+  <Step title="Your webhook receives a notification">
+    Within seconds of the credit landing, we send an HTTP POST request to your registered webhook URL. The payload contains everything you need: who paid, how much, from which bank, and the reference you attached.
+  </Step>
+  <Step title="You update your records">
+    Your server processes the webhook, validates the signature (see below), and updates the relevant record in your system — credit the customer's wallet, mark the invoice paid, confirm the ticket order.
+  </Step>
+</Steps>
+
+---
+
+## The Webhook Payload
+
+When money arrives in a collection account, your webhook endpoint receives a POST request with this body:
+
+```json
+{
+  "event": "collection.credit",
+  "data": {
+    "accountNumber": "9876543210",
+    "amount": 50000.00,
+    "currency": "NGN",
+    "senderName": "ADEBAYO JOHNSON",
+    "senderAccountNumber": "0123456789",
+    "senderBankCode": "058",
+    "narration": "Payment for order ORD-001",
+    "transactionRef": "COL-20260325-001",
+    "timestamp": "2026-03-25T10:00:00+01:00"
+  }
+}
+```
+
+| Field | What it means |
+|---|---|
+| `event` | The type of event. Always check this — your endpoint may receive multiple event types. |
+| `data.accountNumber` | The collection account number that received the money. Use this to find which customer or order it belongs to. |
+| `data.amount` | The amount received, in Naira. |
+| `data.senderName` | The account holder name at the sending bank. |
+| `data.senderAccountNumber` | The account number the sender transferred from. |
+| `data.senderBankCode` | The CBN bank code of the sender's bank (e.g. `058` = GTBank). |
+| `data.narration` | The description the sender included on the transfer. |
+| `data.transactionRef` | Our unique reference for this transaction. Store this — use it for reconciliation and disputes. |
+| `data.timestamp` | When the credit was confirmed, in ISO 8601 format with timezone offset. |
+
+---
+
+## Verify Webhook Authenticity
+
+**You must verify every webhook before acting on it.** Anyone who knows your webhook URL could send you fake payment notifications. The `X-Signature` header lets you confirm the request genuinely came from us.
+
+We compute the signature by running an HMAC-SHA256 hash over the raw request body using your webhook secret. You reproduce the same computation on your side and compare the results.
+
+<Tabs>
+  <Tab title="JavaScript (Node.js)">
+    ```javascript
+    const crypto = require('crypto');
+
+    // This is your Express (or similar) webhook handler
+    app.post('/webhooks/collections', express.raw({ type: 'application/json' }), (req, res) => {
+      const signature = req.headers['x-signature'];
+      const rawBody = req.body; // Must be the raw Buffer, not parsed JSON
+
+      if (!isValidSignature(rawBody, signature, process.env.UBN_WEBHOOK_SECRET)) {
+        console.warn('Invalid webhook signature — ignoring request');
+        return res.status(401).send('Unauthorized');
+      }
+
+      const payload = JSON.parse(rawBody);
+
+      if (payload.event === 'collection.credit') {
+        const { accountNumber, amount, transactionRef } = payload.data;
+        // Your business logic here: credit wallet, mark invoice paid, etc.
+      }
+
+      // Always return 200 quickly — do heavy processing in the background
+      res.status(200).send('OK');
+    });
+
+    function isValidSignature(rawBody, receivedSignature, secret) {
+      const expected = 'sha256=' + crypto
+        .createHmac('sha256', secret)
+        .update(rawBody)
+        .digest('hex');
+
+      // timingSafeEqual prevents timing attacks — always use this instead of ===
+      return crypto.timingSafeEqual(
+        Buffer.from(receivedSignature),
+        Buffer.from(expected)
+      );
+    }
+    ```
+
+    <Note>
+      **Why `express.raw` instead of `express.json`?** You must verify the signature against the exact raw bytes of the body. If Express parses the JSON first and then re-stringifies it, the bytes may differ (e.g. key ordering, whitespace) and your signature check will fail. Always read the raw body for webhook verification.
+    </Note>
+  </Tab>
+  <Tab title="Python (Flask)">
+    ```python
+    import hmac
+    import hashlib
+    import os
+    from flask import Flask, request, jsonify
+
+    app = Flask(__name__)
+
+    @app.route('/webhooks/collections', methods=['POST'])
+    def handle_collection_webhook():
+        signature = request.headers.get('X-Signature', '')
+        raw_body = request.get_data()  # Raw bytes, not parsed JSON
+
+        if not is_valid_signature(raw_body, signature, os.environ['UBN_WEBHOOK_SECRET']):
+            print('Invalid webhook signature — ignoring request')
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        payload = request.get_json()
+
+        if payload['event'] == 'collection.credit':
+            account_number = payload['data']['accountNumber']
+            amount = payload['data']['amount']
+            transaction_ref = payload['data']['transactionRef']
+            # Your business logic here
+
+        return '', 200  # Always respond 200 quickly
+
+    def is_valid_signature(raw_body: bytes, received_signature: str, secret: str) -> bool:
+        expected = 'sha256=' + hmac.new(
+            secret.encode(),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        # Use compare_digest to prevent timing attacks
+        return hmac.compare_digest(received_signature, expected)
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  **Never skip signature verification** — even in development. An unverified webhook endpoint means an attacker could fake a ₦1,000,000 payment notification and your system would credit the customer without any money actually arriving.
+</Warning>
+
+---
+
+## View Transaction History
+
+Pull a list of all credits received across your collection accounts, or filtered to a single account:
+
+```bash
+# All collection credits across all accounts
+curl -X GET "https://dev-api-partner.onecluster.co/api/v1/collections/transactions?from=2026-03-01&to=2026-03-25&page=1&limit=50" \
+  -H "Authorization: ApiKey ubn_sb_your_key_here"
+
+# Credits for a specific account number
+curl -X GET "https://dev-api-partner.onecluster.co/api/v1/collections/transactions?accountNumber=9876543210&from=2026-03-01&to=2026-03-25" \
+  -H "Authorization: ApiKey ubn_sb_your_key_here"
+```
+
+---
+
+## Reversal Handling
+
+Occasionally a credit that arrived in a collection account may be reversed. This happens when the sending bank discovers an error on their end (e.g. the sender's account had insufficient funds but the transfer was processed optimistically, or a fraud flag is raised).
+
+When a reversal happens, you will receive a `collection.reversal` webhook event:
+
+```json
+{
+  "event": "collection.reversal",
+  "data": {
+    "accountNumber": "9876543210",
+    "amount": 50000.00,
+    "currency": "NGN",
+    "originalTransactionRef": "COL-20260325-001",
+    "reversalRef": "REV-20260326-001",
+    "reason": "Sender insufficient funds",
+    "timestamp": "2026-03-26T08:30:00+01:00"
+  }
+}
+```
+
+**What to do when you receive a reversal:**
+
+1. Check your records using `originalTransactionRef` to find the credit you previously processed.
+2. Reverse any action you took — for example, deduct the credited amount from the customer's wallet.
+3. Notify the customer that the payment was reversed and they need to retry.
+4. Do not re-credit until a new `collection.credit` event arrives for a fresh payment.
+
+<Note>
+  Reversals are relatively rare in the Nigerian interbank system but do happen. Building reversal handling from the start will save you painful manual corrections later.
+</Note>

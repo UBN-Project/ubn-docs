@@ -1,0 +1,174 @@
+---
+title: "Rate Limits & Quotas"
+description: "How many API calls you can make and what to do when you hit the limit"
+---
+
+Every API has limits. Limits protect every partner on the platform — including you — from one application monopolising shared infrastructure. Understanding how our limits work prevents surprises in production.
+
+## Two Types of Limits
+
+<CardGroup cols={2}>
+  <Card title="Rate Limits" icon="gauge-high">
+    The maximum number of requests allowed within a short time window (seconds or minutes). Rate limits prevent burst abuse — for example, a loop in your code that fires 500 requests in one second.
+  </Card>
+  <Card title="Quotas" icon="calendar">
+    The maximum number of requests allowed within your billing period (typically one month). Quotas are determined by your partner plan. Hitting a quota means you have used your allocation for the period, not just a short burst.
+  </Card>
+</CardGroup>
+
+A **rate limit violation** returns HTTP `429 Too Many Requests`. A **quota exhaustion** returns HTTP `402 Payment Required`. Both include headers that tell you exactly what happened and when you can retry.
+
+---
+
+## Rate Limits by Endpoint
+
+These limits apply per API key unless otherwise noted. "Per IP" limits apply per source IP address regardless of key.
+
+| Endpoint | Limit | Window | Burst |
+|---|---|---|---|
+| `POST /api/Auth/register` | 10 requests | 1 minute per IP | 3 / second |
+| `POST /api/Auth/verifyEmailCode` | 5 requests | 15 minutes per IP | 2 / second |
+| `POST /api/v1/accounts` | 60 requests | 1 minute per key | 10 / second |
+| `POST /api/v1/payments/transfer` | 30 requests | 1 minute per key | 5 / second |
+| `POST /api/v1/payments/account-enquiry` | 60 requests | 1 minute per key | 10 / second |
+| `POST /api/v1/kyc/bvn/verify` | 100 requests | 1 hour per key | 10 / second |
+| `POST /api/v1/kyc/nin/verify` | 100 requests | 1 hour per key | 10 / second |
+| `POST /api/v1/kyc/cac/lookup` | 200 requests | 1 hour per key | 20 / second |
+| `GET /api/v1/accounts/*` | 120 requests | 1 minute per key | 20 / second |
+
+**Burst** is the maximum number of requests per second within the window. Even if you have quota remaining, sending requests faster than the burst rate will trigger a `429`.
+
+<Info>
+  The `/api/Auth/` endpoints use IP-based limits, not key-based limits, because they are called before you have authenticated. If you have multiple services behind a single NAT IP, they share this limit.
+</Info>
+
+---
+
+## Response Headers to Monitor
+
+Every API response includes headers that tell you where you stand. Read these in your application — do not rely on hitting a `429` to detect a limit.
+
+| Header | What It Means |
+|---|---|
+| `X-Quota-Remaining` | The number of calls left in your current billing period. When this reaches zero, you will receive `402` responses. |
+| `X-Quota-Reset` | The date and time when your quota resets, in **WAT (West Africa Time, UTC+1)**. Format: ISO 8601. |
+| `X-RateLimit-Remaining` | Requests remaining in the current rate limit window. |
+| `X-RateLimit-Reset` | When the current rate limit window resets (Unix timestamp). |
+| `Retry-After` | Present only on `429` responses. The number of seconds you must wait before retrying. |
+
+<Tip>
+  Log `X-Quota-Remaining` in your application metrics. Set an alert when it falls below 20% so you have time to contact us before you are completely blocked.
+</Tip>
+
+---
+
+## What to Do When Rate Limited (HTTP 429)
+
+A `429` response means you sent requests too fast. The right response is **exponential backoff with jitter**: wait a little, retry, wait a little longer if it fails again, and so on. Do not retry immediately in a tight loop — that makes the problem worse.
+
+<CodeGroup>
+  ```javascript Node.js
+  async function callWithRetry(requestFn, maxRetries = 5) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await requestFn();
+
+        if (response.status === 429) {
+          const retryAfter = parseInt(response.headers.get("Retry-After") || "1", 10);
+          // Exponential backoff: 1s, 2s, 4s, 8s, 16s — plus random jitter
+          const jitter = Math.random() * 1000; // up to 1 extra second
+          const delay = Math.min(retryAfter * 1000, (2 ** attempt) * 1000) + jitter;
+
+          console.warn(`Rate limited. Retrying in ${Math.round(delay / 1000)}s (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        return response;
+      } catch (err) {
+        if (attempt === maxRetries) throw err;
+      }
+    }
+  }
+
+  // Usage
+  const response = await callWithRetry(() =>
+    fetch("https://dev-api-partner.onecluster.co/api/v1/payments/transfer", {
+      method: "POST",
+      headers: {
+        "Authorization": `ApiKey ${process.env.UBN_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    })
+  );
+  ```
+
+  ```python Python
+  import time
+  import random
+  import requests
+
+  def call_with_retry(request_fn, max_retries=5):
+      for attempt in range(max_retries + 1):
+          response = request_fn()
+
+          if response.status_code == 429:
+              retry_after = int(response.headers.get("Retry-After", 1))
+              jitter = random.uniform(0, 1)  # up to 1 extra second
+              delay = min(retry_after, 2 ** attempt) + jitter
+
+              print(f"Rate limited. Retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+              time.sleep(delay)
+              continue
+
+          return response
+
+      raise Exception("Max retries exceeded")
+
+  # Usage
+  import os
+
+  def make_transfer():
+      return requests.post(
+          "https://dev-api-partner.onecluster.co/api/v1/payments/transfer",
+          headers={
+              "Authorization": f"ApiKey {os.environ['UBN_API_KEY']}",
+              "Content-Type": "application/json"
+          },
+          json=payload
+      )
+
+  response = call_with_retry(make_transfer)
+  ```
+</CodeGroup>
+
+<Note>
+  The **jitter** (random extra delay) is important. Without it, all your retry attempts fire at the same moment, creating a "thundering herd" that immediately triggers another rate limit. Jitter spreads the retries out in time.
+</Note>
+
+---
+
+## What to Do When Quota Is Exhausted (HTTP 402)
+
+A `402 Payment Required` response means you have used all the requests in your plan for this billing period. Unlike a rate limit, waiting and retrying will not help — you need to either wait for the reset date (shown in `X-Quota-Reset`) or upgrade your plan.
+
+To discuss your current quota, upgrade your plan, or request a temporary increase for a high-volume event (such as a product launch), email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with:
+
+- Your Partner ID
+- Your current plan
+- The volume you expect and the timeframe
+
+Give us at least 5 business days' notice for quota increases. Same-day increases are not guaranteed.
+
+---
+
+## Sandbox vs Production Limits
+
+**Sandbox has the same rate limits as production.** This is intentional.
+
+If sandbox had no limits, you would build and test your application without backoff logic — and then hit production limits immediately on launch. The sandbox limits ensure that your retry and backoff logic is tested and working before you go live.
+
+<Tip>
+  Test your backoff logic explicitly in the sandbox. Write a test that sends requests in a tight loop until it gets a `429`, then verify that your application handles it gracefully and recovers.
+</Tip>

@@ -1,0 +1,237 @@
+---
+title: "Step 3: Submit Business Documents (KYB)"
+description: "Upload your company's compliance documents for verification"
+---
+
+<Note>
+  This is Step 3 of 6 in the onboarding journey. [View the full onboarding overview →](/onboarding/overview)
+</Note>
+
+## What is KYB?
+
+**KYB** stands for **Know Your Business**. It is the process of confirming that your company is real, legally registered in Nigeria, and operating legitimately.
+
+Before we give you access to banking infrastructure that moves real money, we need to verify that the company behind the integration actually exists. This is not about doubting you personally — it is a **regulatory requirement from the Central Bank of Nigeria (CBN)**. Every licensed financial institution in Nigeria is required by law to verify the businesses they work with before providing financial services. We cannot make exceptions, even for established companies.
+
+Think of it like the onboarding paperwork you complete when opening a corporate bank account. The bank asks for your registration documents not because they distrust you, but because they are legally required to keep those records.
+
+**KYB is different from KYC.** KYB verifies the *company*. KYC (which comes next in Step 4) verifies the *people* who run the company. Both are required.
+
+---
+
+## Documents required
+
+You will need to upload all required documents. Optional documents are not mandatory but often speed up the review because they give our compliance team a more complete picture.
+
+| Document | Format | Max Size | Required? | Notes |
+|----------|--------|----------|-----------|-------|
+| Certificate of Incorporation | PDF | 10MB | Yes | Issued by the CAC when your company was registered. Must clearly show your RC number and company name. |
+| Director's Government-Issued ID | PDF or JPG | 10MB | Yes | National ID card, International Passport, or Driver's Licence for at least one company director. The name on the ID must match the director's name in your CAC records. |
+| Utility Bill | PDF | 10MB | Yes | Dated within the last 3 months. Must show your company's registered address. Acceptable bills: PHCN/electricity, water, waste management, or broadband. |
+| Memorandum and Articles of Association | PDF | 10MB | Optional | A legal document describing your company's purpose and internal rules. Not required, but including it often shortens review time. |
+
+<Warning>
+  The name on the Director's ID must exactly match the name recorded for that director with the CAC. A mismatch between the ID name and the CAC records is the most common reason for KYB rejection.
+</Warning>
+
+---
+
+## How to upload your documents
+
+### Option A: Upload via the web portal
+
+1. Log in at [dev-api-partner.onecluster.co](https://dev-api-partner.onecluster.co)
+2. Navigate to **Onboarding** → **Documents**
+3. Upload each document in the appropriate slot
+4. Click **Submit for Review**
+
+The portal shows the upload progress for each file and confirms when the submission is complete.
+
+---
+
+### Option B: Upload via the API
+
+**Endpoint:** `POST /api/v1/kyb/documents`
+
+**Base URL:** `https://dev-api-partner.onecluster.co`
+
+This endpoint accepts **multipart form data** — a way of sending files over the internet alongside text fields in a single request. It is different from the JSON requests you made in Steps 1 and 2. The `-F` flag in `curl` is how you send multipart data.
+
+```bash
+curl -X POST https://dev-api-partner.onecluster.co/api/v1/kyb/documents \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -F "partnerId=prt_7f3a9b2c1d4e5f6a" \
+  -F "certificateOfIncorporation=@/path/to/certificate.pdf;type=application/pdf" \
+  -F "directorId=@/path/to/director-id.pdf;type=application/pdf" \
+  -F "utilityBill=@/path/to/utility-bill.pdf;type=application/pdf" \
+  -F "memorandumOfAssociation=@/path/to/moa.pdf;type=application/pdf"
+```
+
+Replace `/path/to/filename.pdf` with the actual file path on your computer. The `@` symbol before the path tells `curl` to read the file from disk and include it in the request.
+
+**Form fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `partnerId` | string | Yes | Your partner ID from the registration response |
+| `certificateOfIncorporation` | file | Yes | PDF, max 10MB |
+| `directorId` | file | Yes | PDF or JPG, max 10MB |
+| `utilityBill` | file | Yes | PDF, max 10MB |
+| `memorandumOfAssociation` | file | No | PDF, max 10MB |
+
+### Success response
+
+```json
+{
+  "success": true,
+  "message": "Documents submitted successfully. Your KYB review has begun.",
+  "data": {
+    "partnerId": "prt_7f3a9b2c1d4e5f6a",
+    "status": "UNDER_REVIEW",
+    "submittedAt": "2025-03-25T11:15:00Z",
+    "documentsReceived": [
+      "certificateOfIncorporation",
+      "directorId",
+      "utilityBill",
+      "memorandumOfAssociation"
+    ],
+    "estimatedReviewCompletion": "2025-03-27T17:00:00Z"
+  }
+}
+```
+
+**Understanding the response fields:**
+
+| Field | What it means |
+|-------|---------------|
+| `status` | `UNDER_REVIEW` means your documents have been received and queued for review by our compliance team. |
+| `submittedAt` | The exact time your submission was received, in UTC. |
+| `documentsReceived` | A list of every document we received. Check this against what you intended to upload. |
+| `estimatedReviewCompletion` | Our target time for completing the review — usually 2 business days from submission. This is a target, not a guarantee. |
+
+---
+
+## Document security
+
+Your documents contain sensitive legal and personal information. Here is how we protect them:
+
+<Info>
+  All uploaded documents are encrypted using **AES-256** before they are written to storage. AES-256 (Advanced Encryption Standard with a 256-bit key) is the same encryption standard used by banks, governments, and military organisations worldwide. Even if someone gained unauthorised access to the storage system, they could not read your documents without the decryption key, which is stored separately in a hardware security module.
+</Info>
+
+Additional protections:
+
+- Documents are accessible only to authorised UBN compliance personnel during the review process
+- Access to documents is logged and audited
+- Documents are automatically deleted 90 days after your account is either fully approved or permanently rejected
+- We do not share your documents with third parties except where required by law (for example, in response to a valid CBN regulatory request)
+
+---
+
+## After you submit: the review process
+
+Once you submit your documents, your account status changes to `UNDER_REVIEW`. Here is what happens next:
+
+<Steps>
+  <Step title="Automated checks (immediate)">
+    Our system runs automated checks immediately on upload:
+    - File format validation (is it actually a PDF or JPG, not a renamed file?)
+    - File size validation
+    - Basic legibility check (is the document machine-readable?)
+  </Step>
+
+  <Step title="Compliance officer review (up to 2 business days)">
+    A trained compliance officer reviews your documents manually. They check:
+    - That the company name on your Certificate of Incorporation matches what you registered with
+    - That the RC number is valid and matches the CAC registry
+    - That the Director's ID belongs to a real person whose name matches the CAC records
+    - That the utility bill is within 3 months and shows the registered company address
+  </Step>
+
+  <Step title="Decision and notification">
+    You receive an email notification with the outcome:
+
+    - **Approved:** Your documents passed review. KYC verification (Step 4) begins automatically.
+    - **Rejected:** You receive a specific explanation of which document failed and why, and instructions on how to re-submit.
+  </Step>
+</Steps>
+
+**Review timeline:** Our target is to complete KYB reviews within **2 business days** of submission. We do not process reviews on weekends or Nigerian public holidays. If you submit on a Friday afternoon, expect the review to complete by end of day Tuesday.
+
+---
+
+## What happens if your documents are rejected?
+
+If your documents are rejected, you will receive an email from `baas-support@unionbank.ng` with:
+
+- Which document was rejected
+- The specific reason it was rejected
+- Instructions for what to fix and how to re-submit
+
+You can re-submit documents as many times as needed. There is no penalty for resubmission, but each review cycle takes up to 2 business days.
+
+**Common rejection reasons:**
+
+<AccordionGroup>
+  <Accordion title="Certificate of Incorporation: company name mismatch">
+    The name on the certificate does not exactly match the name you registered with. Even minor differences like "Ltd" vs "Limited" or a missing comma count as mismatches.
+
+    **Fix:** Either update the company name in your profile to exactly match the certificate, or contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) to request a manual correction.
+  </Accordion>
+
+  <Accordion title="Director's ID: image quality too low">
+    The ID is blurry, partially cut off, or too dark to read clearly.
+
+    **Fix:** Rescan the document. If you are using a phone camera, ensure you are in good lighting, the document is flat, and all four corners are visible in the frame. The text on the ID must be clearly legible.
+  </Accordion>
+
+  <Accordion title="Utility bill: date is more than 3 months old">
+    The bill is dated more than 3 months before the date of your submission.
+
+    **Fix:** Obtain a more recent bill. If your company's utility bills are not in the company's name (for example, the office is rented), a letter from the landlord confirming the address, accompanied by the landlord's own recent utility bill, may be accepted. Contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) to confirm.
+  </Accordion>
+
+  <Accordion title="Utility bill: address does not match">
+    The address on the utility bill does not match the registered address on your Certificate of Incorporation or the address you provided during registration.
+
+    **Fix:** Use a bill that is addressed to your company's registered address. If your company has moved, you may need to update your CAC registered address first.
+  </Accordion>
+
+  <Accordion title="Document appears to have been altered">
+    The system or reviewer has flagged the document as potentially edited or modified.
+
+    **Fix:** Submit an unaltered original document. Cropping the white space around a document is acceptable, but removing or obscuring any text, modifying dates, or editing any content will result in rejection and may trigger a compliance escalation.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Tips for faster approval
+
+The fastest way through KYB review is to submit high-quality documents on your first attempt. Here are the most effective things you can do:
+
+<Tip>
+  **Scan, don't photograph.** A flatbed scanner produces dramatically cleaner results than a phone camera. Most print shops and office supply stores offer scanning services for a small fee if you do not have access to a scanner.
+</Tip>
+
+<Tip>
+  **All four corners must be visible.** If even one corner of a document is cut off, the reviewer cannot confirm it is the full document. Leave a small margin of white space around the document when scanning.
+</Tip>
+
+<Tip>
+  **No glare on IDs.** Plastic ID cards reflect light. When photographing or scanning an ID, place it under diffuse lighting (not direct sunlight or a bright overhead light) to avoid glare obscuring text.
+</Tip>
+
+<Tip>
+  **Use searchable PDFs where possible.** If you have a PDF that was created digitally (not a scan of a paper document), it is machine-readable and passes automated checks faster.
+</Tip>
+
+<Tip>
+  **Upload the Memorandum of Association.** It is optional, but it gives our compliance team a clear picture of your business purpose, which often reduces back-and-forth questions and speeds up approval.
+</Tip>
+
+---
+
+Your documents are submitted. While you wait for review, you can read ahead to understand what happens during KYC verification.
+
+[Continue to Step 4: KYC Verification →](/onboarding/kyc-verification)

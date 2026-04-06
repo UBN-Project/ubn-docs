@@ -1,0 +1,392 @@
+---
+title: "Glossary — Plain English Definitions"
+description: "Every technical term used in these docs, explained in plain English. If you encounter a word you do not understand anywhere in the documentation, look it up here."
+---
+
+<Info>
+  This glossary explains every technical term used in these docs. If you encounter a word you do not understand anywhere in the documentation, look it up here. Terms are sorted alphabetically and grouped by first letter.
+</Info>
+
+---
+
+## A
+
+<AccordionGroup>
+  <Accordion title="API — Application Programming Interface">
+    A set of rules and instructions that lets two software systems talk to each other.
+
+    **Plain English:** Imagine you are in a restaurant. You do not walk into the kitchen and cook your own food — you order from the menu, and the kitchen prepares it and sends it back. The menu is the API: it defines what you can ask for, in what format, and what you will get back. You (the developer) are the customer; our system is the kitchen; the API is the menu.
+
+    In practice: your application sends a request to a URL (like `https://dev-api-partner.onecluster.co/api/v1/accounts`), and our system sends back a response with data in JSON format.
+  </Accordion>
+
+  <Accordion title="API Key">
+    A unique secret code that identifies your application to our system. It must be included in every API request.
+
+    **Plain English:** Think of it like a key card for an office building. You swipe it at the door, the security system recognises it, and you get in. If someone else gets hold of your key card, they can enter as you — which is why you keep it private and never share it.
+
+    **Format:** Sandbox keys start with `ubn_sb_`. Production keys start with `ubn_pk_`.
+
+    **How to use it:** Add it to every request as a header:
+    ```
+    Authorization: ApiKey ubn_sb_your_key_here
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## B
+
+<AccordionGroup>
+  <Accordion title="BaaS — Banking as a Service">
+    The ability to use a licensed bank's existing infrastructure — their accounts, payment rails, and regulatory approvals — to add banking features to your own product, without becoming a bank yourself.
+
+    **Plain English:** Like renting a fully equipped commercial kitchen to run your restaurant. You bring the recipes and the customers; the kitchen handles the ovens, the permits, and the suppliers.
+
+    UBN BaaS is Union Bank's implementation of this model. You build the product; we provide the banking infrastructure underneath it.
+  </Accordion>
+
+  <Accordion title="BVN — Bank Verification Number">
+    An 11-digit number issued by the Central Bank of Nigeria (CBN) that links a Nigerian individual to all their bank accounts across every bank in Nigeria.
+
+    **Plain English:** When a Nigerian opens their first bank account, they register a BVN. This number follows them across every bank they ever use. It is one of the primary ways to confirm that someone is who they say they are.
+
+    **In this platform:** You can verify a customer's BVN using the KYC API to confirm their identity before allowing them to transact. See the [KYC product guide](/products/kyc).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## C
+
+<AccordionGroup>
+  <Accordion title="CAC — Corporate Affairs Commission">
+    Nigeria's official company registration authority. Every legitimate business in Nigeria is registered with the CAC and given a unique registration number.
+
+    **Plain English:** If you want to do business legally in Nigeria, you register your company with the CAC — similar to Companies House in the UK or the SEC in the US. The CAC issues you a certificate and a registration number.
+
+    **In this platform:** We check your CAC registration number as part of KYB (Know Your Business) when you onboard. We can also verify a customer's company registration via the KYC API.
+  </Accordion>
+
+  <Accordion title="CBN — Central Bank of Nigeria">
+    Nigeria's central banking regulator. The CBN sets the rules for how all banks and financial service providers operate in Nigeria — including BaaS platforms like ours.
+
+    **Plain English:** Think of the CBN as the referee for all of Nigeria's financial system. Every bank, fintech, and payment company must follow CBN rules. When we say something is "required by the CBN", it means it is a legal requirement — not a choice.
+  </Accordion>
+
+  <Accordion title="Circuit Breaker">
+    An automatic safety mechanism in our system that temporarily stops sending requests to a service that is struggling, to prevent the problem from spreading. Once the service recovers, the circuit breaker resets and normal operations resume.
+
+    **Plain English:** Think of the fuse box in a house. When there is an electrical fault, the fuse blows to protect your appliances. Once the fault is fixed, you reset the fuse and everything works. A circuit breaker does the same for software services.
+
+    **What to do if you see it:** If a response contains the header `X-Circuit-Breaker-Open: true`, wait a few seconds before retrying. Do not send rapid repeated requests. See the [Key Concepts](/key-concepts) page for more detail.
+  </Accordion>
+
+  <Accordion title="Correlation ID">
+    A unique reference number assigned to a single API request so it can be tracked end-to-end across all the different systems it passes through.
+
+    **Plain English:** When you call a bank to ask about a transaction, they give you a "reference number". If you call back later with that number, any agent can pull up the exact record. A Correlation ID works the same way — it lets us trace a specific request through our logs, even if it touched ten different services.
+
+    **How to use it:** Include `X-Correlation-ID: your-uuid-here` in your request headers. If you omit it, we generate one and return it in the response. When contacting support about a problem, always include the Correlation ID — it dramatically speeds up investigation.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## D
+
+<AccordionGroup>
+  <Accordion title="Dynamic Account">
+    A virtual bank account that closes automatically after a set period of time, or after it receives a single payment — whichever comes first.
+
+    **Plain English:** A dynamic account is like a temporary post office box. You rent it for a specific purpose (to receive one payment), it works for that purpose, and then it disappears automatically. You do not need to close it manually.
+
+    **Best for:** One-time payment collection. For example, generate a dynamic account for each checkout session in your e-commerce app — once the customer pays, the account closes.
+
+    Compare with: [Static Account](#static-account).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## E
+
+<AccordionGroup>
+  <Accordion title="Endpoint">
+    A specific URL in the API that performs a specific action when you call it.
+
+    **Plain English:** If the API is a restaurant menu, each endpoint is a specific dish. `/api/v1/accounts` is the "open a virtual account" dish. `/api/v1/payments/transfer` is the "send a payment" dish. Each endpoint has a specific method (GET to retrieve something, POST to create something, DELETE to remove something) and a specific format for the data you send and receive.
+
+    **Example endpoints in this platform:**
+
+    | Endpoint | What it does |
+    |---|---|
+    | `GET /health` | Check if the API is online |
+    | `POST /api/v1/accounts` | Open a new virtual account |
+    | `POST /api/v1/payments/transfer` | Send money to another bank account |
+    | `POST /api/v1/kyc/verify/bvn` | Verify a customer's BVN |
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## H
+
+<AccordionGroup>
+  <Accordion title="HMAC-SHA256">
+    A mathematical formula used to create a digital signature — a unique fingerprint attached to a message that proves the message came from you and has not been tampered with in transit.
+
+    **Plain English:** Imagine you write a letter and seal it with a wax seal that only you have. When the recipient receives the letter, they can check the seal — if it is intact, they know the letter came from you and was not opened or changed on the way. HMAC-SHA256 is the digital version of that wax seal.
+
+    **When you need it:** For payment and KYC requests (operations that move money or handle sensitive personal data), you must sign the request body using HMAC-SHA256 and include the signature in the `X-Signature` header. See the [Authentication guide](/api-reference/authentication) for a step-by-step implementation.
+  </Accordion>
+
+  <Accordion title="HTTP Status Code">
+    A 3-digit number that the API returns with every response to tell you whether your request succeeded or failed, and why.
+
+    **Plain English:** Like the light on a printer — green means it worked, red means there is a problem, and the exact pattern tells you what the problem is.
+
+    **Common codes you will see:**
+
+    | Code | Meaning | What to do |
+    |---|---|---|
+    | `200 OK` | Request succeeded | Read and use the response data |
+    | `201 Created` | A new resource was created | Save the ID returned in the response |
+    | `400 Bad Request` | Your request had invalid data | Read the error message for what to fix |
+    | `401 Unauthorized` | Your API key is missing or wrong | Check your `Authorization` header |
+    | `403 Forbidden` | Your key is valid but you do not have permission | Check your account status and permissions |
+    | `404 Not Found` | The resource you asked for does not exist | Check the ID or endpoint URL |
+    | `409 Conflict` | The request conflicts with existing state (e.g., duplicate) | Check if you need a new idempotency key |
+    | `422 Unprocessable Entity` | The data format is valid but the values are wrong | Read the error detail — a field value is invalid |
+    | `429 Too Many Requests` | You have exceeded the rate limit | Wait and retry — check the `Retry-After` header |
+    | `500 Internal Server Error` | Something went wrong on our side | Retry after a brief wait; contact support if it persists |
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## I
+
+<AccordionGroup>
+  <Accordion title="Idempotency">
+    The property of an operation where making the same request multiple times produces exactly the same result as making it once — no duplicates, no side effects.
+
+    **Plain English:** Imagine you press the elevator button once, but the elevator is slow to arrive, so you press it again. The elevator still comes once — pressing the button a second time did not summon a second elevator. Idempotency works the same way: you can send the same request multiple times (because of a network timeout, for example), and the system will only act on it once.
+
+    **How to use it:** Include a unique UUID in the `X-Idempotency-Key` header for every request that creates or changes something:
+    ```
+    X-Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000
+    ```
+    Generate a fresh UUID for each new, distinct operation. Reuse the same UUID only when retrying after a failure.
+
+    See the [Key Concepts](/key-concepts) page for a fuller explanation.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## J
+
+<AccordionGroup>
+  <Accordion title="JSON — JavaScript Object Notation">
+    The text format used to send data to the API and receive data from it. It is the standard language that APIs use to communicate.
+
+    **Plain English:** JSON is a way of structuring information as key–value pairs, which both humans and computers can read easily. Think of it like a simple form where each field has a label and a value.
+
+    **Example:**
+    ```json
+    {
+      "accountName": "TechFin Collections",
+      "currency": "NGN",
+      "type": "static"
+    }
+    ```
+    Here, `accountName` is the label (called the "key") and `"TechFin Collections"` is the value. Curly braces `{}` hold an object. Square brackets `[]` hold a list. Quotes around words mean it is text; numbers have no quotes.
+
+    You do not need to know JavaScript to use JSON — it is just a text format for data.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## K
+
+<AccordionGroup>
+  <Accordion title="KYB — Know Your Business">
+    The process of verifying that a company applying to use the platform is a legitimate, legally registered business that is compliant with Nigerian financial regulations.
+
+    **Plain English:** Before a bank opens an account for a business, they check that the business is real — they look at the registration documents, verify the directors' identities, and understand what the business does. KYB is that due diligence process.
+
+    **What it involves:** Submitting your CAC certificate, director ID documents, and describing your intended use case. This happens once during onboarding. See the [KYB Documents guide](/onboarding/kyb-documents).
+  </Accordion>
+
+  <Accordion title="KYC — Know Your Customer">
+    The process of verifying that an individual user is who they claim to be, before allowing them to access financial services.
+
+    **Plain English:** When you open a bank account, the bank checks your ID. As a partner building a financial product, you must do the same for your own customers. We give you the API tools to check BVN, NIN, and CAC numbers so you can comply with Nigerian financial regulations.
+
+    **What it involves (for your customers):** Collecting and verifying their BVN, NIN, or company CAC number using our KYC API. See the [KYC product guide](/products/kyc).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## M
+
+<AccordionGroup>
+  <Accordion title="mTLS — Mutual TLS">
+    A security protocol where both sides of a connection — your application and our server — prove their identity to each other using digital certificates, before any data is exchanged.
+
+    **Plain English:** Normal HTTPS is like showing your ID to enter a building — only you prove who you are. mTLS is like a secure facility where both you AND the security guard show their IDs to each other before either of you does anything. Neither side trusts the other without proof.
+
+    **When you need it:** mTLS is required for all payment operations in production. During onboarding you will generate a client certificate and register it with us. See the [Authentication guide](/api-reference/authentication) for setup instructions.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## N
+
+<AccordionGroup>
+  <Accordion title="NDPR — Nigeria Data Protection Regulation">
+    Nigeria's primary data privacy law, which governs how organisations collect, store, process, and share personal information about Nigerian individuals.
+
+    **Plain English:** Just as GDPR protects the privacy of people in Europe, NDPR protects the privacy of people in Nigeria. If you collect a customer's BVN, phone number, address, or any other personal data, NDPR says you must do so responsibly — collect only what you need, keep it secure, and give people the right to know what you have collected.
+
+    **What this means for you:** By using this platform you agreed to NDPR obligations. See the [NDPR Compliance page](/security/ndpr-compliance) for a summary of your responsibilities.
+  </Accordion>
+
+  <Accordion title="NIN — National Identification Number">
+    An 11-digit number issued by the National Identity Management Commission (NIMC) that uniquely identifies a Nigerian citizen.
+
+    **Plain English:** Every Nigerian citizen enrolled in the national identity system has a NIN. It is similar to a national ID number or social security number in other countries. It is used to confirm a person's identity when a BVN alone is not sufficient.
+
+    **In this platform:** You can verify a customer's NIN using the KYC API. See the [KYC product guide](/products/kyc).
+  </Accordion>
+
+  <Accordion title="NIP — Nigeria Instant Payment">
+    Nigeria's inter-bank real-time payment network, operated by NIBSS (Nigeria Inter-Bank Settlement System). NIP transfers typically complete within seconds and work between all banks in Nigeria.
+
+    **Plain English:** When you send money from your GTBank account to a UBA account and it arrives in seconds, that is NIP at work. It is the infrastructure that makes instant transfers possible across different banks. All payment transfers on this platform use the NIP network.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## P
+
+<AccordionGroup>
+  <Accordion title="Partner">
+    What you become when your company has registered on the UBN BaaS platform, passed KYB review, and been approved to use the APIs.
+
+    **Plain English:** "Partner" is simply how we refer to companies using this platform. If you have signed up and been approved, you are a partner. Your partner account holds your API keys, your virtual accounts, and your transaction history. Every API call you make is linked to your partner account.
+  </Accordion>
+
+  <Accordion title="Partner ID">
+    Your unique identifier in our system. Assigned to you when you register, and used to identify your account in logs, support tickets, and API responses.
+
+    **Format:** A UUID, for example: `9a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d`
+
+    **Where to find it:** In your sandbox or production dashboard, under **Settings → Account**. Always include your Partner ID when contacting support — it lets us find your account immediately.
+  </Accordion>
+
+  <Accordion title="Production">
+    The live environment where real money moves and real customers are served. Use production only after you have thoroughly tested your integration in sandbox.
+
+    **Base URL:** `https://api-partner.onecluster.co`
+
+    **API key prefix:** `ubn_pk_`
+
+    **Important:** There is no undo button in production. A payment sent is a payment sent. Test everything in sandbox first.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## S
+
+<AccordionGroup>
+  <Accordion title="Sandbox">
+    A testing environment that is identical in behaviour to production — but uses no real money and has no real-world consequences. It is completely free to use and has no time limit.
+
+    **Plain English:** A sandbox is exactly what it sounds like — a sandbox where you can play, experiment, and make mistakes safely. No real customers, no real money, no real risk.
+
+    **Base URL:** `https://dev-api-partner.onecluster.co`
+
+    **API key prefix:** `ubn_sb_`
+
+    See the [Sandbox Guide](/resources/sandbox-guide) for tips on getting the most from the sandbox environment.
+  </Accordion>
+
+  <Accordion title="Static Account">
+    A virtual bank account that stays open indefinitely, until you explicitly close it through the API or dashboard.
+
+    **Plain English:** A static account is like a permanent post office box that belongs to one specific person or purpose. It stays open, and money can be sent to it repeatedly over time.
+
+    **Best for:** Dedicated accounts for individual customers — for example, a savings wallet account or a dedicated receivables account for a specific vendor.
+
+    Compare with: [Dynamic Account](#dynamic-account).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## U
+
+<AccordionGroup>
+  <Accordion title="UUID — Universally Unique Identifier">
+    A 32-character random string, formatted in groups separated by hyphens, that is virtually guaranteed to be unique in the world. Used to identify things — partner accounts, transactions, requests — without any two ever being the same.
+
+    **Example:** `550e8400-e29b-41d4-a716-446655440000`
+
+    **Plain English:** Think of it like a lottery ticket number — the odds of two people having the same number are so astronomically small that you can treat them as impossible. UUIDs are used throughout this platform as IDs for partners, accounts, transactions, and idempotency keys.
+
+    **How to generate one:** Most programming languages have a built-in UUID library. In JavaScript: `crypto.randomUUID()`. In Python: `import uuid; str(uuid.uuid4())`. You can also generate one at [uuidgenerator.net](https://www.uuidgenerator.net).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## V
+
+<AccordionGroup>
+  <Accordion title="Virtual Account">
+    A real Nigerian bank account number — issued by Union Bank, valid across the NIP network — that is created and managed programmatically through the API. It lives within your master partner account.
+
+    **Plain English:** It behaves exactly like a normal bank account. It has a 10-digit account number. Anyone in Nigeria can send money to it from any bank. When money arrives, your webhook fires and your system can react. The difference from a normal account is that you create it with a single API call, in seconds, and you can create thousands of them.
+
+    See the [Virtual Accounts product guide](/products/virtual-accounts).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## W
+
+<AccordionGroup>
+  <Accordion title="WAT — West Africa Time">
+    Nigeria's time zone. WAT is UTC+1 — meaning it is 1 hour ahead of Greenwich Mean Time (GMT) year-round. Nigeria does not observe daylight saving time.
+
+    **Why it matters:** Timestamps in API responses and webhook events are expressed in WAT (e.g., `2026-03-25T10:00:00+01:00`). When you store or display these times, account for the timezone offset so your customers see the correct local time.
+  </Accordion>
+
+  <Accordion title="Webhook">
+    An automatic HTTP notification that our system sends to a URL on your server the moment a specific event occurs — for example, a payment being received or a KYC check being completed.
+
+    **Plain English:** Instead of your application repeatedly asking our API "did anything happen?" (known as polling), a webhook means we call you the moment something does happen. Like asking a restaurant to text you when your table is ready, rather than checking with the host every five minutes.
+
+    **How it works:**
+    1. You register a webhook URL with us (e.g., `https://yourapp.com/webhooks/ubn`)
+    2. When an event happens, we POST a JSON payload to that URL within seconds
+    3. Your server receives it, processes it, and responds with `HTTP 200` to confirm receipt
+
+    **Security:** Always verify that a webhook came from us by checking the `X-Signature` header using HMAC-SHA256. See the [Webhooks product guide](/products/webhooks) for a complete verification implementation.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+<Note>
+  Did not find the term you were looking for? Email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) and we will add it to this glossary.
+</Note>

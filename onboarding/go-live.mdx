@@ -1,0 +1,234 @@
+---
+title: "Step 6: Go Live — Request Production Access"
+description: "Everything you need to move from sandbox testing to real transactions"
+---
+
+<Note>
+  This is Step 6 of 6 in the onboarding journey. [View the full onboarding overview →](/onboarding/overview)
+</Note>
+
+You have registered your company, verified your identity, received your sandbox API key, and built and tested your integration. That is a significant amount of work, and you are now one step away from handling real transactions for real customers.
+
+This step covers what you need to do before applying, what happens during the review, and what to expect after you go live.
+
+---
+
+## What production access means
+
+Production is the live banking environment. When you are live:
+
+- Virtual accounts you create are **real bank accounts** backed by Union Bank, with real NUBAN (Nigerian Uniform Bank Account Number) account numbers that can receive deposits from any Nigerian bank
+- Payments you initiate are **real money transfers** over the NIP (Nigeria Instant Payment) network — they cannot be reversed once they clear
+- Customers who use your product are **real people** whose money you are responsible for
+
+This is why the review exists. A brief wait now protects your customers, your business, and the broader financial system from integration errors that could cause real financial harm.
+
+<Warning>
+  There is no "undo" in production. A payment sent to the wrong account, a virtual account created with incorrect details, or a webhook handler that fails silently can have real financial consequences. The go-live checklist exists precisely to help you catch these issues before they affect real people.
+</Warning>
+
+---
+
+## Prerequisites: complete this checklist before applying
+
+Do not submit your production access request until every item on this list is complete. Our review team will check for evidence of each item.
+
+<AccordionGroup>
+  <Accordion title="Integration completeness">
+    <Check>**Completed at least one full end-to-end test for each product you are requesting access to.** For example, if you want access to both Payments and Virtual Accounts, you should have tested the full flow for each: creating an account, funding it (in sandbox), initiating a payment, and handling the resulting webhooks — all the way through to your own application's response.</Check>
+
+    <Check>**Set up HTTPS-only webhook endpoints.** A webhook endpoint is a URL on your server that we send notifications to when events happen (for example, "a payment was received" or "a transfer completed"). Webhooks must be served over HTTPS — HTTP is not accepted in production. Your endpoint must return a `200 OK` status within 30 seconds of receiving a notification. See the [Webhooks product guide](/products/webhooks) for implementation details.</Check>
+
+    <Check>**Tested your webhook handler.** Use the sandbox webhook simulation tool to send test events to your endpoint and confirm your handler processes them correctly, including failure scenarios (duplicate events, out-of-order delivery, malformed payloads).</Check>
+  </Accordion>
+
+  <Accordion title="Security">
+    <Check>**Stored your API keys in environment variables or a secret manager — not in code or in Git.** See [Step 5: API Keys](/onboarding/api-keys) for guidance on secure key storage.</Check>
+
+    <Check>**Implemented idempotency keys on all write operations.** An **idempotency key** is a unique string you include in the header of every request that creates or modifies data (`POST`, `PUT`, `DELETE`). If your network drops and you retry a request, the idempotency key tells our system "this is the same request you already processed — do not do it again." Without idempotency keys, a network retry can create duplicate payments or accounts. Use a UUID (a randomly generated unique identifier — most programming languages have a library for this) as the idempotency key for each unique operation.</Check>
+
+    <Check>**Implemented retry logic with exponential backoff.** If an API request fails with a `5xx` error (a server-side error), your code should automatically retry the request after a short delay. **Exponential backoff** means each retry waits longer than the previous one — for example, wait 1 second, then 2, then 4, then 8. This prevents your system from overwhelming ours during an incident and improves your resilience to transient failures.</Check>
+
+    <Check>**Know your server's outbound IP addresses.** When your production access is approved, we add your server's IP addresses to our allowlist — a list of addresses permitted to make production API calls. You need to provide these addresses in your application. If your IP addresses change (for example, if you move hosting providers), contact us to update the allowlist.</Check>
+  </Accordion>
+
+  <Accordion title="Operational readiness">
+    <Check>**Set up monitoring and alerts for your integration.** You should have dashboards or alerts that notify you if your API error rate increases, your webhook handler fails, or your response times degrade. The sandbox is the time to set this up — do not figure it out after go-live.</Check>
+
+    <Check>**Defined your incident response process.** Know what you will do if something goes wrong in production. Who gets paged? What is the escalation path? How do you reach UBN BaaS support? Our support email is [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng).</Check>
+
+    <Check>**Reviewed the rate limits for your production tier.** Production rate limits differ from sandbox limits. Confirm your expected peak request volume fits within your approved production tier. See [Rate Limits](/security/rate-limits) for details.</Check>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## How to submit your production access request
+
+**Endpoint:** `POST /api/v1/partners/{partnerId}/production-access-request`
+
+**Base URL:** `https://dev-api-partner.onecluster.co`
+
+Replace `{partnerId}` in the URL with your actual partner ID (from the registration response in Step 1).
+
+```bash
+curl -X POST https://dev-api-partner.onecluster.co/api/v1/partners/prt_7f3a9b2c1d4e5f6a/production-access-request \
+  -H "Authorization: ApiKey ubn_sb_your_sandbox_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "products": ["accounts", "payments", "collections"],
+    "businessJustification": "TechFin Limited operates a savings and investment platform serving retail customers in Nigeria. We require virtual accounts to give each customer a unique collection account tied to their savings wallet, payments capability to process customer withdrawal requests to their bank accounts, and collections to receive customer deposits. We currently serve 8,000 registered users in sandbox testing and are preparing for a public launch.",
+    "serverIpAddresses": ["197.210.1.10", "197.210.1.11"],
+    "webhookUrls": [
+      "https://api.techfin.ng/webhooks/ubn/payments",
+      "https://api.techfin.ng/webhooks/ubn/accounts"
+    ],
+    "vpnConnectionFormReference": "VPN-FORM-2025-0342"
+  }'
+```
+
+**Request body fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `products` | array of strings | Yes | The API products you are requesting production access to. Valid values: `accounts`, `payments`, `collections`, `kyc`. Only request products you have actually tested in sandbox. |
+| `businessJustification` | string | Yes | A description of your use case in at least 50 words. Explain what your product does, who your customers are, why you need each product you are requesting, and your expected transaction volumes. More detail here reduces back-and-forth and speeds up approval. |
+| `serverIpAddresses` | array of strings | Yes | The outbound IP addresses of your production servers. These are added to the production API allowlist. All production API calls must originate from these IPs. |
+| `webhookUrls` | array of strings | Yes | The HTTPS URLs where you want to receive production webhook notifications. Must be reachable from the public internet and must return `200 OK`. |
+| `vpnConnectionFormReference` | string | Conditional | The reference number of your completed VPN Connection Form. Required if your use case involves high-volume payments or you have been advised by your UBN relationship manager to set up a VPN connection. |
+
+### What is the VPN Connection Form?
+
+A **VPN (Virtual Private Network) Connection Form** is a document provided by your UBN relationship manager that sets up a secure, encrypted private network connection between your servers and UBN's infrastructure.
+
+A standard HTTPS API connection over the public internet is secure for most use cases. A VPN connection goes further — it routes your API traffic through a private, dedicated network channel that bypasses the public internet entirely. This is required for partners with very high transaction volumes, partners handling particularly sensitive data, or partners whose risk profile or use case warrants the additional security layer.
+
+Your UBN relationship manager will tell you whether you need a VPN connection. If you have not been assigned a relationship manager, email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with your `partnerId` and "VPN Connection" in the subject line.
+
+---
+
+## What happens during the review
+
+After you submit your request, your application goes through a structured review process. Target review time is **2–5 business days**.
+
+<Steps>
+  <Step title="Initial screening (Day 1)">
+    Our team confirms your application is complete: all required fields are present, your IP addresses are valid, your webhook URLs are reachable, and your business justification meets the minimum detail requirement.
+
+    If anything is missing or incomplete, you receive an email within 24 hours asking for the specific information needed. Responding promptly keeps the process moving.
+  </Step>
+
+  <Step title="Integration review (Days 1–3)">
+    A technical reviewer examines your sandbox activity to confirm:
+    - You have actually tested the products you are requesting access to
+    - Your integration handles error cases correctly (not just happy paths)
+    - Your webhook handler has been exercised with various event types
+    - Your usage patterns do not suggest incomplete or unstable implementation
+  </Step>
+
+  <Step title="Security review (Days 2–4)">
+    Our security team reviews your server IP addresses, webhook URLs, and any information provided about your security setup. They may ask follow-up questions about your infrastructure, key management, or data handling practices.
+  </Step>
+
+  <Step title="Final approval and provisioning (Day 4–5)">
+    When the review is complete and approved, our team:
+    - Issues your production API key
+    - Adds your server IP addresses to the production allowlist
+    - Configures your VPN connection (if applicable)
+    - Activates your production webhook endpoints
+    - Sends you a confirmation email with your production key and go-live instructions
+  </Step>
+</Steps>
+
+---
+
+## What happens when you are approved
+
+You will receive an email from `noreply@unionbank.ng` with the subject **"UBN BaaS — Production access approved"**. The email contains:
+
+- Your production API key (shown once — save it immediately)
+- Confirmation of which products are enabled
+- Your production rate limits
+- The UBN BaaS support contacts for production issues
+- A link to the [Incident Response](/resources/support) page
+
+At this point, your production API key is active and you can make live API calls to `https://api-partner.onecluster.co`.
+
+---
+
+## What happens if more information is needed
+
+If our team needs clarification or additional information, you will receive an email with specific questions. Common examples:
+
+- "Please describe your expected peak daily payment volume"
+- "Please confirm how you will handle customer disputes for payments"
+- "Your webhook URL returned a 404 during our test — please confirm it is live"
+
+Responding to these questions promptly keeps your review on track. Most requests resolve within 1 additional business day.
+
+---
+
+## Post-go-live: staying healthy in production
+
+Going live is not the end — it is the beginning. Here are the most important things to do in the days and weeks after your launch.
+
+<AccordionGroup>
+  <Accordion title="Monitor your error rates">
+    Set up a dashboard or alert that fires if your API error rate (HTTP `4xx` or `5xx` responses) rises above your baseline. A sudden increase in errors is usually the first signal of a problem — catching it early prevents it from affecting many customers.
+
+    Key metrics to track:
+    - API error rate (percentage of requests returning errors)
+    - Webhook delivery failure rate
+    - Payment failure rate (separate from API errors — a payment can succeed at the API level and fail at the banking network level)
+    - Response time (latency above 5 seconds on synchronous endpoints usually indicates a problem)
+  </Accordion>
+
+  <Accordion title="Handle webhook failures properly">
+    UBN BaaS retries failed webhook deliveries up to 5 times with exponential backoff. But if your webhook endpoint is down for an extended period, you may miss events.
+
+    Best practices:
+    - Queue incoming webhook events rather than processing them synchronously — this prevents your webhook handler from timing out
+    - Store raw webhook payloads before processing — if your processing logic has a bug, you can replay the stored payloads after fixing it
+    - Alert yourself if your webhook endpoint returns non-`200` responses more than a handful of times per hour
+  </Accordion>
+
+  <Accordion title="Know when and how to contact support">
+    For production incidents (live transactions failing, unexpected API behaviour, suspected security issues):
+
+    - **Email:** [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) — include your `partnerId`, the affected endpoint, a sample request ID, and the time the issue started
+    - **Subject line format:** `[PROD INCIDENT] Brief description` — this flags the email for priority handling
+
+    For non-urgent questions, documentation feedback, or general queries, the same email address applies — just omit the `[PROD INCIDENT]` prefix.
+  </Accordion>
+
+  <Accordion title="Rotate your production keys regularly">
+    Production API keys should be rotated at least every 90 days. See [Step 5: API Keys](/onboarding/api-keys) for the rotation process. The 72-hour grace period makes this straightforward to do without any downtime.
+
+    Set a calendar reminder now, before you forget.
+  </Accordion>
+
+  <Accordion title="Keep your IP allowlist up to date">
+    If you change hosting providers, add new servers, or move to a different cloud region, your outbound IP addresses will change. Contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) before making infrastructure changes to update your allowlist. API calls from unlisted IP addresses are blocked.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+You have completed the full UBN BaaS onboarding journey. Welcome to production.
+
+If you have not already, explore the product guides to get the most out of your integration:
+
+<CardGroup cols={2}>
+  <Card title="Virtual Accounts" icon="building-columns" href="/products/virtual-accounts">
+    Create and manage real Nigerian bank accounts programmatically.
+  </Card>
+  <Card title="Payments" icon="paper-plane" href="/products/payments">
+    Send money to any Nigerian bank account over the NIP network.
+  </Card>
+  <Card title="Collections" icon="arrow-down-to-bracket" href="/products/collections">
+    Receive money from customers with unique collection accounts.
+  </Card>
+  <Card title="Webhooks" icon="bolt" href="/products/webhooks">
+    Get real-time notifications for every event in your integration.
+  </Card>
+</CardGroup>

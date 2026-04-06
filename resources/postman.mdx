@@ -1,0 +1,155 @@
+---
+title: "Postman Collection"
+description: "Test the UBN BaaS API with our ready-made Postman collection"
+---
+
+The UBN BaaS Postman collection gives you a ready-to-use set of API requests so you can explore every endpoint, test your credentials, and understand request and response shapes — without writing a single line of code.
+
+## What Is Postman?
+
+**Postman** is a free desktop application that lets you make API calls through a visual interface. Think of it as a remote control for the API: you pick the endpoint, fill in the parameters, press send, and see the response. It is the fastest way to verify that your API key works, understand what a response looks like, and manually test edge cases before you build them into your application.
+
+Download it free at [postman.com](https://www.postman.com/downloads/).
+
+---
+
+## Getting Started
+
+<Steps>
+  <Step title="Download and install Postman">
+    Go to [postman.com/downloads](https://www.postman.com/downloads/) and download the version for your operating system (Windows, macOS, or Linux). Create a free Postman account when prompted — you need an account to use the environment and collection features.
+  </Step>
+
+  <Step title="Import the UBN BaaS collection">
+    Download the collection JSON file from the repository:
+
+    ```
+    https://github.com/UBN-Project/UBN/blob/main/docs/resources/ubn-baas.postman_collection.json
+    ```
+
+    In Postman:
+    1. Click **Import** in the top-left corner.
+    2. Choose **File** and select the downloaded JSON file.
+    3. Click **Import**. The collection appears in your left sidebar under **Collections**.
+  </Step>
+
+  <Step title="Create your Postman environment">
+    The collection uses environment variables so you do not have to paste your credentials into every request. Set up an environment to hold your values.
+
+    In Postman:
+    1. Click the **Environments** icon in the left sidebar (looks like a slider).
+    2. Click **+** to create a new environment. Name it `UBN BaaS — Sandbox`.
+    3. Add the following variables:
+
+    | Variable | Initial Value | Description |
+    |---|---|---|
+    | `base_url` | `https://dev-api-partner.onecluster.co` | The sandbox API base URL |
+    | `api_key` | _(your sandbox API key)_ | From the portal under API Keys |
+    | `partner_id` | _(your Partner ID)_ | From the portal under Account Settings, e.g. `PRT-0001` |
+    | `signing_secret` | _(your signing secret)_ | From the portal — required for payment and KYC requests |
+    | `webhook_secret` | _(your webhook signing secret)_ | From the portal under Webhook Settings |
+
+    4. Click **Save**.
+    5. In the top-right corner of Postman, select `UBN BaaS — Sandbox` from the environment dropdown so the collection uses these values.
+
+    <Warning>
+      Treat the **Initial Value** column as the value visible to anyone with access to your Postman workspace. For credentials, use **Current Value** instead — it is local to your machine and not synced to Postman's cloud. Click the eye icon next to each variable to switch between columns.
+    </Warning>
+  </Step>
+
+  <Step title="Verify connectivity with a health check">
+    Expand the collection in the left sidebar. Open the **Health** folder and click **GET Health Check**.
+
+    Press **Send**. You should receive:
+
+    ```json
+    {
+      "status": "healthy",
+      "timestamp": "2026-03-25T14:00:00.000Z"
+    }
+    ```
+
+    If you see this response, your Postman environment is configured correctly and the API is reachable.
+  </Step>
+
+  <Step title="Follow the collection folder structure">
+    The collection is organised into folders that match the documentation sections. Work through them in order when first exploring the API:
+
+    1. **Health** — connectivity check
+    2. **Auth** — partner registration and email verification
+    3. **KYB** — document submission
+    4. **API Keys** — generate, rotate, revoke
+    5. **KYC** — BVN, NIN, and CAC verification
+    6. **Accounts** — create and query virtual accounts
+    7. **Payments** — account enquiry and transfers
+    8. **Collections** — receive inbound payments
+    9. **Webhooks** — register endpoints, view delivery history
+  </Step>
+</Steps>
+
+---
+
+## Environment Variables Reference
+
+| Variable | Where to Find It | Example Value |
+|---|---|---|
+| `base_url` | Fixed — use the sandbox URL during development | `https://dev-api-partner.onecluster.co` |
+| `api_key` | Portal → API Keys → Generate Key | `sk_sandbox_abc123...` |
+| `partner_id` | Portal → Account Settings | `PRT-0001` |
+| `signing_secret` | Portal → API Keys → Signing Secret | `signingsecret_abc123...` |
+| `webhook_secret` | Portal → Webhooks → Signing Secret | `whsec_abc123...` |
+
+When you switch to production, create a second Postman environment called `UBN BaaS — Production` with `base_url` set to `https://api-partner.onecluster.co` and your production credentials. Switch between environments using the dropdown in the top-right corner — no changes to the requests themselves are needed.
+
+---
+
+## Automatic Headers
+
+The collection includes **pre-request scripts** that run automatically before each request is sent. You do not need to set these headers manually:
+
+<CardGroup cols={2}>
+  <Card title="X-Correlation-ID" icon="fingerprint">
+    A unique identifier generated for every request. Postman sets this automatically using a UUID. When you report an issue to support, copy this value from the request headers tab — it is how we find your specific request in our logs.
+  </Card>
+  <Card title="Content-Type" icon="code">
+    Set to `application/json` on all POST and PATCH requests. The pre-request script handles this so you only need to fill in the request body.
+  </Card>
+</CardGroup>
+
+---
+
+## Request Signing for Payments and KYC
+
+Payment and KYC endpoints require an `X-Signature` header — a cryptographic signature that proves the request body has not been modified in transit.
+
+<Note>
+  The collection includes a pre-request script that **computes the HMAC-SHA256 signature automatically** using the `signing_secret` variable in your environment. You do not need to compute it manually. Just set the `signing_secret` variable correctly and Postman handles the rest.
+</Note>
+
+The script works as follows:
+
+```javascript
+// Pre-request script included in the collection (shown for transparency)
+const body = pm.request.body ? pm.request.body.toString() : "";
+const secret = pm.environment.get("signing_secret");
+const signature = CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);
+pm.request.headers.add({ key: "X-Signature", value: signature });
+```
+
+If you later implement signing in your own application, this is the exact algorithm to replicate. See [API Reference — Authentication](/api-reference/authentication) for a full explanation.
+
+---
+
+## Tips for Effective Testing
+
+<Tip>
+  Use the **Postman Console** (View → Postman Console, or Alt+Cmd+C on Mac) to see exactly what request was sent, including all headers. This is invaluable when debugging signature issues — you can see the exact body that was signed alongside the resulting header.
+</Tip>
+
+<Tip>
+  Right-click any request and choose **Duplicate** to create a copy for testing variations. For example, duplicate the transfer request to have one for testing a successful transfer and one for testing an invalid account number — without losing your working configuration.
+</Tip>
+
+<Tip>
+  Use the **Tests** tab in Postman to write assertions on the response. The collection includes example tests for common checks (status code is 200, response contains a `reference` field). You can run the entire collection as a test suite using **Collection Runner** to verify all endpoints pass after any change.
+</Tip>

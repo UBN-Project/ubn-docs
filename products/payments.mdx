@@ -1,0 +1,353 @@
+---
+title: "Payments & Transfers"
+description: "Send money from your virtual accounts to any Nigerian bank"
+---
+
+## What is the Payments Product?
+
+The payments product lets you **send money from your virtual accounts to any bank account in Nigeria** — programmatically, from your application. No branch visits, no manual transfers.
+
+You can send money instantly (via NIP) or schedule a standard electronic transfer (via NEFT). Both routes reach any Nigerian bank: GTBank, Access, Zenith, First Bank, Kuda, Opay, and hundreds more.
+
+---
+
+## NIP vs NEFT — Which Should You Use?
+
+<CardGroup cols={2}>
+  <Card title="NIP — Instant Payment" icon="bolt">
+    **Nigeria's instant payment network.** Like sending a WhatsApp message — arrives in seconds, 24 hours a day, 7 days a week, including public holidays.
+
+    **Use NIP when:** Speed matters to your customer. Salary payments, bill payments, P2P transfers — anything where a delay would be noticeable or harmful.
+
+    **Limit:** Up to ₦10,000,000 per single transaction.
+  </Card>
+  <Card title="NEFT — Electronic Funds Transfer" icon="building-columns">
+    **Standard electronic transfer.** Processed in batches during banking hours. Can take a few hours on business days.
+
+    **Use NEFT when:** You are moving large amounts and do not need instant delivery. Good for treasury operations, payroll runs scheduled in advance, or vendor settlements.
+
+    **Limit:** No hard per-transaction cap (subject to your partner agreement).
+  </Card>
+</CardGroup>
+
+<Info>
+  When in doubt, use NIP. It is the default for most BaaS use cases and your customers will have a better experience.
+</Info>
+
+---
+
+## The 3-Step Payment Flow
+
+Every payment you initiate must follow these three steps in order. Skipping step 1 is the most common cause of failed or misdirected payments.
+
+<Steps>
+  <Step title="Account Enquiry — Verify the destination first">
+    Before sending any money, confirm that the destination account exists and fetch the **account holder's name**. Show this name to your user so they can confirm they are sending to the right person.
+
+    This protects your users from typos and protects you from fraud claims.
+
+    <Tabs>
+      <Tab title="cURL">
+        ```bash
+        curl -X GET "https://dev-api-partner.onecluster.co/api/v1/payments/enquiry?accountNumber=0123456789&bankCode=058" \
+          -H "Authorization: ApiKey ubn_sb_your_key_here"
+        ```
+      </Tab>
+      <Tab title="JavaScript (fetch)">
+        ```javascript
+        const params = new URLSearchParams({
+          accountNumber: '0123456789',
+          bankCode: '058', // GTBank
+        });
+
+        const response = await fetch(
+          `https://dev-api-partner.onecluster.co/api/v1/payments/enquiry?${params}`,
+          {
+            headers: {
+              'Authorization': 'ApiKey ubn_sb_your_key_here',
+            },
+          }
+        );
+
+        const result = await response.json();
+        // Show result.data.accountName to your user for confirmation
+        console.log(result.data.accountName); // "ADEBAYO JOHNSON"
+        ```
+      </Tab>
+    </Tabs>
+
+    **Response:**
+
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "accountNumber": "0123456789",
+        "accountName": "ADEBAYO JOHNSON",
+        "bankCode": "058",
+        "bankName": "Guaranty Trust Bank"
+      }
+    }
+    ```
+
+    <Warning>
+      Always display the `accountName` to your user and ask them to confirm before proceeding. This single step prevents the majority of wrong-recipient complaints.
+    </Warning>
+  </Step>
+
+  <Step title="Initiate Transfer — Send the payment">
+    Once your user confirms the recipient, send the transfer request. You will receive a `transactionRef` immediately — this is your tracking ID. **You will NOT get the final result at this point.** Payments are processed asynchronously (in the background), which is why there is a step 3.
+
+    <Tabs>
+      <Tab title="cURL">
+        ```bash
+        curl -X POST https://dev-api-partner.onecluster.co/api/v1/payments/transfer \
+          -H "Authorization: ApiKey ubn_sb_your_key_here" \
+          -H "Content-Type: application/json" \
+          -H "X-Idempotency-Key: $(uuidgen)" \
+          -H "X-Signature: sha256=your_computed_signature" \
+          -d '{
+            "sourceAccountNumber": "9023456789",
+            "destinationAccountNumber": "0123456789",
+            "destinationBankCode": "058",
+            "amount": 50000.00,
+            "currency": "NGN",
+            "narration": "Payment for Invoice INV-2026-001",
+            "channel": "NIP",
+            "feeMode": "LUMP_FEE_VAT"
+          }'
+        ```
+      </Tab>
+      <Tab title="JavaScript (fetch)">
+        ```javascript
+        const { randomUUID } = require('crypto');
+        const crypto = require('crypto');
+
+        const requestBody = {
+          sourceAccountNumber: '9023456789',
+          destinationAccountNumber: '0123456789',
+          destinationBankCode: '058',
+          amount: 50000.00,
+          currency: 'NGN',
+          narration: 'Payment for Invoice INV-2026-001',
+          channel: 'NIP',
+          feeMode: 'LUMP_FEE_VAT',
+        };
+
+        // Compute HMAC signature (see Security section below)
+        const signature = 'sha256=' + crypto
+          .createHmac('sha256', process.env.UBN_SECRET_KEY)
+          .update(JSON.stringify(requestBody))
+          .digest('hex');
+
+        const response = await fetch(
+          'https://dev-api-partner.onecluster.co/api/v1/payments/transfer',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': 'ApiKey ubn_sb_your_key_here',
+              'Content-Type': 'application/json',
+              'X-Idempotency-Key': randomUUID(),
+              'X-Signature': signature,
+            },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        const result = await response.json();
+        const transactionRef = result.data.transactionRef;
+        // Store this — you need it for step 3
+        ```
+      </Tab>
+    </Tabs>
+
+    **Response:**
+
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "transactionRef": "TXN-20260325-ABC123",
+        "status": "PENDING",
+        "message": "Transfer initiated. Use transactionRef to poll for final status."
+      }
+    }
+    ```
+
+    <Note>
+      Store the `transactionRef` in your database immediately. You will need it in step 3 to fetch the final result, and for any future dispute resolution.
+    </Note>
+  </Step>
+
+  <Step title="Poll for Status — Check the result">
+    Poll the status endpoint using the `transactionRef` from step 2. Most NIP payments complete within 30 seconds. Poll every 5–10 seconds, up to a maximum of 12 attempts (2 minutes total), before marking the transaction as "pending review."
+
+    <Tabs>
+      <Tab title="cURL">
+        ```bash
+        curl -X GET https://dev-api-partner.onecluster.co/api/v1/payments/TXN-20260325-ABC123/status \
+          -H "Authorization: ApiKey ubn_sb_your_key_here"
+        ```
+      </Tab>
+      <Tab title="JavaScript (fetch)">
+        ```javascript
+        async function waitForPayment(transactionRef, maxAttempts = 12) {
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            const response = await fetch(
+              `https://dev-api-partner.onecluster.co/api/v1/payments/${transactionRef}/status`,
+              { headers: { 'Authorization': 'ApiKey ubn_sb_your_key_here' } }
+            );
+
+            const result = await response.json();
+            const status = result.data.status;
+
+            if (status === 'SUCCESSFUL' || status === 'FAILED' || status === 'REVERSED') {
+              return result.data; // Terminal state — stop polling
+            }
+
+            // Still in progress — wait before next attempt
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+
+          // After all attempts, log for manual review
+          throw new Error(`Payment ${transactionRef} did not reach terminal state after ${maxAttempts} attempts`);
+        }
+        ```
+      </Tab>
+    </Tabs>
+
+    **Response:**
+
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "transactionRef": "TXN-20260325-ABC123",
+        "status": "SUCCESSFUL",
+        "amount": 50000.00,
+        "fee": 52.50,
+        "currency": "NGN",
+        "destinationAccountNumber": "0123456789",
+        "destinationAccountName": "ADEBAYO JOHNSON",
+        "destinationBankCode": "058",
+        "narration": "Payment for Invoice INV-2026-001",
+        "completedAt": "2026-03-25T10:00:15+01:00"
+      }
+    }
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Request Security
+
+### HMAC Signature
+
+For payment requests, you must include an `X-Signature` header. This signature proves two things:
+
+1. The request genuinely came from your server (not an impersonator)
+2. The request body has not been modified in transit (no tampering)
+
+Think of it like **wax-sealing an envelope**: anyone can see the envelope, but the unbroken seal proves it came from you and was not opened on the way.
+
+Here is how to compute it:
+
+```javascript
+const crypto = require('crypto');
+
+// requestBody must be the exact object you are sending in the POST body
+const signature = crypto
+  .createHmac('sha256', process.env.UBN_SECRET_KEY)
+  .update(JSON.stringify(requestBody))
+  .digest('hex');
+
+// Add to your request headers:
+// X-Signature: sha256=<signature>
+headers['X-Signature'] = 'sha256=' + signature;
+```
+
+```python
+import hmac
+import hashlib
+import json
+import os
+
+request_body = { ... }  # your payment request dict
+
+signature = hmac.new(
+    os.environ['UBN_SECRET_KEY'].encode(),
+    json.dumps(request_body, separators=(',', ':')).encode(),
+    hashlib.sha256
+).hexdigest()
+
+headers['X-Signature'] = f'sha256={signature}'
+```
+
+<Warning>
+  Never hardcode your `UBN_SECRET_KEY` in your code. Store it in an environment variable or a secrets manager (e.g. AWS Secrets Manager, HashiCorp Vault, or a `.env` file that is excluded from version control).
+</Warning>
+
+### Mutual TLS (mTLS) — Production Only
+
+In production, payment requests must also use **mutual TLS (mTLS)**. Standard HTTPS proves the server is who it claims to be (you trust the server). Mutual TLS goes one step further — the server also proves *your server* is who it claims to be.
+
+Think of it like a **company ID badge for your server**: just as a security guard checks your badge at the door, our servers check your server's certificate before accepting any payment instruction.
+
+You receive your client certificate during the production onboarding process. Pass it in your HTTPS requests using the `--cert` flag (cURL) or the equivalent in your language's HTTP client.
+
+<Info>
+  mTLS is not required in the sandbox environment. Build and test without it, then configure it as part of your [go-live checklist](/onboarding/go-live).
+</Info>
+
+---
+
+## Fee Modes
+
+Every payment has a transaction fee plus VAT on that fee. You control how those charges are structured using the `feeMode` field.
+
+Using a real example: you want to send **₦50,000**. The fee is **₦50** and VAT on the fee is **₦2.50**.
+
+| `feeMode` | What happens | Amount debited from source account |
+|---|---|---|
+| `LUMP_ALL` | Principal + fee + VAT in one debit | ₦50,052.50 (single debit) |
+| `LUMP_FEE_VAT` *(default)* | Principal in one debit, then fee + VAT together | ₦50,000 then ₦52.50 |
+| `SPLIT_FEE_VAT` | Principal, fee, and VAT as three separate debits | ₦50,000 then ₦50 then ₦2.50 |
+
+<Tip>
+  For most consumer-facing products, `LUMP_FEE_VAT` (the default) gives the cleanest user experience: the customer sees one debit for the amount they sent, and one debit for the total charges.
+</Tip>
+
+---
+
+## Idempotency
+
+Idempotency means: if you send the same request twice, you only get one result — not two payments.
+
+**Why this matters:** Imagine your server sends a transfer request, the payment is processed, but your internet drops before you receive the response. You don't know if the payment went through. Without idempotency, retrying would create a duplicate payment. With idempotency, retrying is safe — we detect the duplicate and return the original result.
+
+**How to use it:** Generate a UUID and send it as the `X-Idempotency-Key` header. Store this key alongside your transaction in your database. If you need to retry, send the same key. If it is a genuinely new payment, generate a new key.
+
+```javascript
+// First attempt (or any retry for the same payment)
+headers['X-Idempotency-Key'] = 'a3f1c2d4-7e8b-4f2a-9c1d-0e5f6a7b8c9d';
+
+// Genuinely new payment — new key
+headers['X-Idempotency-Key'] = randomUUID();
+```
+
+---
+
+## Transaction Status Reference
+
+| Status | Meaning | What to do |
+|---|---|---|
+| `PENDING` | The payment has been received and is queued for processing | Keep polling |
+| `PROCESSING` | The payment has been sent to the destination bank and is awaiting confirmation | Keep polling |
+| `SUCCESSFUL` | The destination bank confirmed receipt | Update your records, notify your user |
+| `FAILED` | The payment was rejected — see `failureReason` in the response | Notify your user, check `failureReason`, do not retry without fixing the root cause |
+| `REVERSED` | A previously successful payment was reversed (returned to sender) | Notify your user, update balance, investigate via support |
+
+<Note>
+  `PENDING` and `PROCESSING` are both in-progress states. Only `SUCCESSFUL`, `FAILED`, and `REVERSED` are terminal states — once a transaction reaches one of these, its status will not change again.
+</Note>
