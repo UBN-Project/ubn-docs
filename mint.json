@@ -100,121 +100,71 @@
     {
       "group": "Health & Status",
       "pages": [
-        {
-          "openapi": "GET /health"
-        },
-        {
-          "openapi": "GET /status"
-        }
+        "api-reference/endpoints/get-health",
+        "api-reference/endpoints/get-status"
       ]
     },
     {
       "group": "Onboarding Endpoints",
       "pages": [
         "api-reference/onboarding",
-        {
-          "openapi": "POST /api/Auth/register"
-        },
-        {
-          "openapi": "POST /api/Auth/verifyEmailCode"
-        }
+        "api-reference/endpoints/register",
+        "api-reference/endpoints/verify-email"
       ]
     },
     {
       "group": "API Keys",
       "pages": [
-        {
-          "openapi": "GET /api/v1/partners/{partnerId}/api-keys"
-        },
-        {
-          "openapi": "POST /api/v1/partners/{partnerId}/api-keys"
-        },
-        {
-          "openapi": "POST /api/v1/partners/{partnerId}/api-keys/{keyId}/rotate"
-        },
-        {
-          "openapi": "DELETE /api/v1/partners/{partnerId}/api-keys/{keyId}"
-        }
+        "api-reference/endpoints/list-api-keys",
+        "api-reference/endpoints/generate-api-key",
+        "api-reference/endpoints/rotate-api-key",
+        "api-reference/endpoints/revoke-api-key"
       ]
     },
     {
       "group": "Production Access",
       "pages": [
-        {
-          "openapi": "POST /api/v1/partners/{partnerId}/production-access-request"
-        },
-        {
-          "openapi": "GET /api/v1/partners/{partnerId}/production-access-request"
-        }
+        "api-reference/endpoints/request-production-access",
+        "api-reference/endpoints/get-production-access-status"
       ]
     },
     {
       "group": "Accounts Endpoints",
       "pages": [
         "api-reference/accounts",
-        {
-          "openapi": "POST /api/v1/accounts"
-        },
-        {
-          "openapi": "GET /api/v1/accounts/{accountNumber}"
-        },
-        {
-          "openapi": "GET /api/v1/accounts/{accountNumber}/statement"
-        }
+        "api-reference/endpoints/create-account",
+        "api-reference/endpoints/get-balance",
+        "api-reference/endpoints/get-statement"
       ]
     },
     {
       "group": "Payments Endpoints",
       "pages": [
         "api-reference/payments",
-        {
-          "openapi": "POST /api/v1/payments/account-enquiry"
-        },
-        {
-          "openapi": "POST /api/v1/payments/transfer"
-        },
-        {
-          "openapi": "GET /api/v1/payments/{transactionRef}/status"
-        }
+        "api-reference/endpoints/account-enquiry",
+        "api-reference/endpoints/initiate-transfer",
+        "api-reference/endpoints/get-payment-status"
       ]
     },
     {
       "group": "Collections Endpoints",
       "pages": [
         "api-reference/collections",
-        {
-          "openapi": "POST /api/v1/collections/accounts"
-        },
-        {
-          "openapi": "GET /api/v1/collections/accounts/{accountNumber}/transactions"
-        },
-        {
-          "openapi": "POST /api/v1/collections/webhooks"
-        },
-        {
-          "openapi": "GET /api/v1/collections/webhooks"
-        },
-        {
-          "openapi": "DELETE /api/v1/collections/webhooks/{webhookId}"
-        },
-        {
-          "openapi": "GET /api/v1/collections/webhooks/deliveries"
-        }
+        "api-reference/endpoints/create-collection-account",
+        "api-reference/endpoints/get-collection-transactions",
+        "api-reference/endpoints/register-webhook",
+        "api-reference/endpoints/list-webhooks",
+        "api-reference/endpoints/delete-webhook",
+        "api-reference/endpoints/get-webhook-deliveries"
       ]
     },
     {
       "group": "KYC Endpoints",
       "pages": [
         "api-reference/kyc",
-        {
-          "openapi": "POST /api/v1/kyc/bvn/verify"
-        },
-        {
-          "openapi": "POST /api/v1/kyc/nin/verify"
-        },
-        {
-          "openapi": "POST /api/v1/kyc/cac/lookup"
-        }
+        "api-reference/endpoints/verify-bvn",
+        "api-reference/endpoints/verify-nin",
+        "api-reference/endpoints/cac-lookup"
       ]
     },
     {
