@@ -2,8 +2,8 @@
   "$schema": "https://mintlify.com/schema.json",
   "name": "Union Bank BaaS",
   "logo": {
-    "dark": "/images/logo-dark.svg",
-    "light": "/images/logo-light.svg",
+    "dark": "/images/logo-dark.png",
+    "light": "/images/logo-light.png",
     "href": "https://ubn.onecluster.co"
   },
   "favicon": "/images/favicon.svg",
