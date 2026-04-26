@@ -93,40 +93,8 @@ tags:
 
 paths:
   # ── HEALTH ──────────────────────────────────────────────────────────────────
-  /health:
-    get:
-      summary: API health check
-      description: |
-        Check if the API gateway is online. No authentication required.
-        Use this to confirm connectivity before making other calls.
-      operationId: getHealth
-      tags: [Health]
-      security: []
-      responses:
-        "200":
-          description: API is healthy
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "Healthy"
-
-  /status:
-    get:
-      summary: Detailed system status
-      description: |
-        Returns the status of each API product (accounts, payments, collections, KYC)
-        and whether any circuit breakers are open. No authentication required.
-      operationId: getStatus
-      tags: [Health]
-      security: []
-      responses:
-        "200":
-          description: Detailed status of all services
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StatusResponse"
+  # /health and /status are defined as standalone MDX pages (no auth).
+  # Removed from OpenAPI spec to prevent Mintlify from overriding authMethod: "none".
               example:
                 gateway: "Ubn-Partner-Gateway"
                 version: "1.0.0"
