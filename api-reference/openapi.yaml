@@ -95,16 +95,6 @@ paths:
   # ── HEALTH ──────────────────────────────────────────────────────────────────
   # /health and /status are defined as standalone MDX pages (no auth).
   # Removed from OpenAPI spec to prevent Mintlify from overriding authMethod: "none".
-              example:
-                gateway: "Ubn-Partner-Gateway"
-                version: "1.0.0"
-                timestamp: "2026-04-06T12:30:45Z"
-                routes:
-                  - "/api/v1/accounts/*"
-                  - "/api/v1/payments/*"
-                  - "/api/v1/collections/*"
-                  - "/api/v1/kyc/*"
-                note: "TICKET-013: API Key (Argon2id) + JWT RS256 + mTLS auth active"
 
   # ── ONBOARDING ───────────────────────────────────────────────────────────────
   /api/Auth/register:
