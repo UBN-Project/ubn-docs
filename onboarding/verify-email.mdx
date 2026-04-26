@@ -40,7 +40,7 @@ You have two options: use the web portal or submit the code via the API directly
 ### Option A: Verify via the web portal
 
 1. Open the verification email and copy the 6-digit code
-2. Go to [dev-api-partner.onecluster.co/verify-email](https://dev-api-partner.onecluster.co/verify-email)
+2. Go to [dev-api.onecluster.co/verify-email](https://dev-api.onecluster.co/verify-email)
 3. Enter your email address and the 6-digit code
 4. Click **Verify Email**
 
@@ -52,10 +52,10 @@ You will see a confirmation message and your account status will update to `PEND
 
 **Endpoint:** `POST /api/Auth/verifyEmailCode`
 
-**Base URL:** `https://dev-api-partner.onecluster.co`
+**Base URL:** `https://dev-api.onecluster.co`
 
 ```bash
-curl -X POST https://dev-api-partner.onecluster.co/api/Auth/verifyEmailCode \
+curl -X POST https://dev-api.onecluster.co/api/Auth/verifyEmailCode \
   -H "Content-Type: application/json" \
   -d '{
     "email": "cto@techfin.ng",
@@ -133,7 +133,7 @@ The next step is to upload your company's compliance documents.
     - Or call `POST /api/Auth/resendVerificationCode` with your email address
 
     ```bash
-    curl -X POST https://dev-api-partner.onecluster.co/api/Auth/resendVerificationCode \
+    curl -X POST https://dev-api.onecluster.co/api/Auth/resendVerificationCode \
       -H "Content-Type: application/json" \
       -d '{"email": "cto@techfin.ng"}'
     ```
@@ -149,7 +149,7 @@ The next step is to upload your company's compliance documents.
     An OTP code can only be used once. If you receive a "code already used" error, it means the code was submitted successfully at some point — possibly by you in a different browser tab, or by a team member who also has access to the email inbox.
 
     Check your account status:
-    - Log in to the portal at [dev-api-partner.onecluster.co](https://dev-api-partner.onecluster.co)
+    - Log in to the portal at [dev-api.onecluster.co](https://dev-api.onecluster.co)
     - If you see a `PENDING_KYB_DOCUMENTS` status, your email is already verified and you can proceed to Step 3
 
     If you cannot log in and the code is already used, contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng).

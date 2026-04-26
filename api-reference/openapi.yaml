@@ -22,8 +22,8 @@ info:
 
     | Environment | Base URL |
     |-------------|----------|
-    | Sandbox (for testing) | `https://dev-api-partner.onecluster.co` |
-    | Production (for live apps) | `https://api-partner.onecluster.co` |
+    | Sandbox (for testing) | `https://dev-api.onecluster.co` |
+    | Production (for live apps) | `https://api.onecluster.co` |
 
     ## How to Authenticate
 
@@ -65,9 +65,9 @@ info:
     url: https://unionbank.ng/terms
 
 servers:
-  - url: https://dev-api-partner.onecluster.co
+  - url: https://dev-api.onecluster.co
     description: Sandbox — Use this for testing. No real money moves.
-  - url: https://api-partner.onecluster.co
+  - url: https://api.onecluster.co
     description: Production — Live environment. Real transactions.
 
 security:
@@ -224,7 +224,7 @@ paths:
                 ndprConsentMissing:
                   summary: NDPR consent not given
                   value:
-                    type: "https://api-partner.onecluster.co/errors/ndpr-consent-required"
+                    type: "https://api.onecluster.co/errors/ndpr-consent-required"
                     title: "NDPR Consent Required"
                     status: 422
                     detail: "You must agree to data processing under NDPR to register."
@@ -232,7 +232,7 @@ paths:
                 freeEmailRejected:
                   summary: Gmail or Yahoo email used
                   value:
-                    type: "https://api-partner.onecluster.co/errors/corporate-email-required"
+                    type: "https://api.onecluster.co/errors/corporate-email-required"
                     title: "Corporate Email Required"
                     status: 422
                     detail: "Free email providers (Gmail, Yahoo, Hotmail) are not accepted. Use your company email."
@@ -294,7 +294,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetails"
               example:
-                type: "https://api-partner.onecluster.co/errors/code-expired"
+                type: "https://api.onecluster.co/errors/code-expired"
                 title: "Verification Code Expired"
                 status: 400
                 detail: "The verification code has expired. Please register again to receive a new code."
@@ -1417,7 +1417,7 @@ components:
           type: string
           format: uri
           description: A link to the specific error type documentation
-          example: "https://api-partner.onecluster.co/errors/insufficient-funds"
+          example: "https://api.onecluster.co/errors/insufficient-funds"
         title:
           type: string
           description: Short, human-readable error name

@@ -19,7 +19,7 @@
   "topbarLinks": [
     {
       "name": "Status",
-      "url": "https://api-partner.onecluster.co/api/v1/status"
+      "url": "https://api.onecluster.co/api/v1/status"
     },
     {
       "name": "Support",
@@ -82,6 +82,7 @@
     {
       "group": "Products",
       "pages": [
+        "products/billing",
         "products/virtual-accounts",
         "products/payments",
         "products/collections",
@@ -159,6 +160,14 @@
       ]
     },
     {
+      "group": "Billing Endpoints",
+      "pages": [
+        "api-reference/endpoints/get-wallet",
+        "api-reference/endpoints/get-wallet-statement",
+        "api-reference/endpoints/get-pricing"
+      ]
+    },
+    {
       "group": "KYC Endpoints",
       "pages": [
         "api-reference/kyc",
@@ -186,7 +195,7 @@
     }
   ],
   "api": {
-    "baseUrl": ["https://dev-api-partner.onecluster.co", "https://api-partner.onecluster.co"],
+    "baseUrl": ["https://dev-api.onecluster.co", "https://api.onecluster.co"],
     "auth": {
       "method": "key",
       "name": "Authorization",

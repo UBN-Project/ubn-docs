@@ -13,8 +13,8 @@ Every request you make goes to one of two base URLs depending on your stage of d
 
 | Environment | Base URL | When to use |
 |-------------|----------|-------------|
-| **Sandbox** | `https://dev-api-partner.onecluster.co` | Testing and development — no real money moves |
-| **Production** | `https://api-partner.onecluster.co` | Live application — real transactions with real funds |
+| **Sandbox** | `https://dev-api.onecluster.co` | Testing and development — no real money moves |
+| **Production** | `https://api.onecluster.co` | Live application — real transactions with real funds |
 
 <Warning>
   Sandbox API keys (prefixed `ubn_sb_`) only work against the sandbox URL. Production keys (prefixed `ubn_pk_`) only work against the production URL. Using the wrong combination returns a `403 ENVIRONMENT_MISMATCH` error.
@@ -25,7 +25,7 @@ Every request you make goes to one of two base URLs depending on your stage of d
 All endpoints are available under the `/api/v1/` path prefix. For example:
 
 ```
-https://dev-api-partner.onecluster.co/api/v1/accounts
+https://dev-api.onecluster.co/api/v1/accounts
 ```
 
 We follow these versioning commitments:
@@ -110,7 +110,7 @@ When something goes wrong, the API returns an error in the [RFC 7807 Problem Det
 
 ```json
 {
-  "type": "https://api-partner.onecluster.co/errors/insufficient-funds",
+  "type": "https://api.onecluster.co/errors/insufficient-funds",
   "title": "Insufficient Funds",
   "status": 422,
   "detail": "Account balance is ₦0.00. Minimum required: ₦50,000.00",

@@ -76,7 +76,7 @@ Use the `code` field in the error response body to handle specific errors progra
 
 | Code | HTTP Status | What happened | How to fix |
 |------|-------------|---------------|------------|
-| `ENVIRONMENT_MISMATCH` | 403 | You used a sandbox key (`ubn_sb_`) against the production URL, or a production key (`ubn_pk_`) against the sandbox URL. | Check your base URL and key prefix. Sandbox keys must only be used with `https://dev-api-partner.onecluster.co`. Production keys must only be used with `https://api-partner.onecluster.co`. |
+| `ENVIRONMENT_MISMATCH` | 403 | You used a sandbox key (`ubn_sb_`) against the production URL, or a production key (`ubn_pk_`) against the sandbox URL. | Check your base URL and key prefix. Sandbox keys must only be used with `https://dev-api.onecluster.co`. Production keys must only be used with `https://api.onecluster.co`. |
 | `INVALID_SIGNATURE` | 401 | The HMAC-SHA256 signature in the `X-Signature` header does not match what we computed from your request body. | Re-read the [Signing Requests](/api-reference/authentication#signing-requests) guide. Most common causes: using the API key instead of the signing secret, or your HTTP client re-serialising the JSON after you signed it. |
 
 ### Payments and Accounts
@@ -85,6 +85,14 @@ Use the `code` field in the error response body to handle specific errors progra
 |------|-------------|---------------|------------|
 | `INSUFFICIENT_FUNDS` | 422 | The source account does not have enough balance to cover the transfer amount plus any applicable fees. | Top up the source account, or reduce the transfer amount. The `detail` field in the error includes the current balance and the minimum required amount. |
 | `ACCOUNT_NOT_FOUND` | 404 | The account number you specified does not exist in the system. | Double-check the account number — a transposed digit is a common cause. If you are referencing a recently created account, wait a few seconds and retry (account creation is near-instant but not instantaneous). |
+
+### Billing and Wallet
+
+| Code | HTTP Status | What happened | How to fix |
+|------|-------------|---------------|------------|
+| `E402` | 402 | Your wallet does not have enough available balance to cover the cost of this API call. | Fund your wallet via your Virtual Account, then retry. See [Billing & Wallet](/products/billing). |
+| `WALLET_SUSPENDED` | 402 | Your wallet has been temporarily suspended by an administrator. You cannot make billable API calls until it is unsuspended. | Contact your UBN account manager or email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) to resolve the suspension. You can still fund your wallet while suspended. |
+| `WALLET_CLOSED` | 402 | Your wallet has been permanently closed. No API calls or funding are possible. | Contact your UBN account manager. A closed wallet cannot be reopened. |
 
 ### Quota and Rate Limiting
 
@@ -144,7 +152,7 @@ async function fetchWithRetry(url, options, maxRetries = 4) {
 
 // Usage
 const response = await fetchWithRetry(
-  'https://dev-api-partner.onecluster.co/api/v1/accounts',
+  'https://dev-api.onecluster.co/api/v1/accounts',
   {
     headers: {
       'Authorization': `ApiKey ${process.env.UBN_API_KEY}`,
@@ -188,7 +196,7 @@ def fetch_with_retry(url: str, method: str = 'GET', max_retries: int = 4, **kwar
 
 # Usage
 response = fetch_with_retry(
-    'https://dev-api-partner.onecluster.co/api/v1/accounts',
+    'https://dev-api.onecluster.co/api/v1/accounts',
     headers={
         'Authorization': f"ApiKey {os.environ['UBN_API_KEY']}",
         'Content-Type': 'application/json',
@@ -215,7 +223,7 @@ This is a safety mechanism, not a sign that your integration is broken. When the
 3. Wait **30 seconds** before retrying.
 4. The circuit closes automatically once the downstream service recovers.
 
-You can check real-time service status at [dev-api-partner.onecluster.co/status](https://dev-api-partner.onecluster.co/status).
+You can check real-time service status at [dev-api.onecluster.co/status](https://dev-api.onecluster.co/status).
 
 ---
 

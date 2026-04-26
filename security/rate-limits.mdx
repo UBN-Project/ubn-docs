@@ -93,7 +93,7 @@ A `429` response means you sent requests too fast. The right response is **expon
 
   // Usage
   const response = await callWithRetry(() =>
-    fetch("https://dev-api-partner.onecluster.co/api/v1/payments/transfer", {
+    fetch("https://dev-api.onecluster.co/api/v1/payments/transfer", {
       method: "POST",
       headers: {
         "Authorization": `ApiKey ${process.env.UBN_API_KEY}`,
@@ -131,7 +131,7 @@ A `429` response means you sent requests too fast. The right response is **expon
 
   def make_transfer():
       return requests.post(
-          "https://dev-api-partner.onecluster.co/api/v1/payments/transfer",
+          "https://dev-api.onecluster.co/api/v1/payments/transfer",
           headers={
               "Authorization": f"ApiKey {os.environ['UBN_API_KEY']}",
               "Content-Type": "application/json"

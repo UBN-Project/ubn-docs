@@ -194,11 +194,11 @@ Pull a list of all credits received across your collection accounts, or filtered
 
 ```bash
 # All collection credits across all accounts
-curl -X GET "https://dev-api-partner.onecluster.co/api/v1/collections/transactions?from=2026-03-01&to=2026-03-25&page=1&limit=50" \
+curl -X GET "https://dev-api.onecluster.co/api/v1/collections/transactions?from=2026-03-01&to=2026-03-25&page=1&limit=50" \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 
 # Credits for a specific account number
-curl -X GET "https://dev-api-partner.onecluster.co/api/v1/collections/transactions?accountNumber=9876543210&from=2026-03-01&to=2026-03-25" \
+curl -X GET "https://dev-api.onecluster.co/api/v1/collections/transactions?accountNumber=9876543210&from=2026-03-01&to=2026-03-25" \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 

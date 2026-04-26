@@ -112,7 +112,7 @@ A terminal (also called a command prompt, shell, or console) is a text-based win
 Open your terminal, paste the command below, and replace `ubn_sb_your_key_here` with the actual key you generated in Step 3:
 
 ```bash
-curl https://dev-api-partner.onecluster.co/health \
+curl https://dev-api.onecluster.co/health \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 
@@ -125,7 +125,7 @@ If you prefer JavaScript, paste this into your browser's developer console or a 
 ```javascript
 const apiKey = "ubn_sb_your_key_here"; // Replace with your actual key
 
-const response = await fetch("https://dev-api-partner.onecluster.co/health", {
+const response = await fetch("https://dev-api.onecluster.co/health", {
   method: "GET",
   headers: {
     "Authorization": `ApiKey ${apiKey}`
@@ -198,8 +198,8 @@ Let's read the `/status` response together:
   <Accordion title="I got a connection error or 'could not resolve host'">
     This is usually a network issue. Check:
     1. Are you connected to the internet?
-    2. Is your company firewall blocking outbound HTTPS requests to `dev-api-partner.onecluster.co`? Ask your IT team to whitelist this domain on port 443.
-    3. Try opening [https://dev-api-partner.onecluster.co/health](https://dev-api-partner.onecluster.co/health) in your web browser. If that fails too, the issue is your network, not your code.
+    2. Is your company firewall blocking outbound HTTPS requests to `dev-api.onecluster.co`? Ask your IT team to whitelist this domain on port 443.
+    3. Try opening [https://dev-api.onecluster.co/health](https://dev-api.onecluster.co/health) in your web browser. If that fails too, the issue is your network, not your code.
   </Accordion>
   <Accordion title="I never received my verification email">
     1. Check your spam and junk folders.
@@ -220,7 +220,7 @@ Let's read the `/status` response together:
     Alternatively, use the JavaScript example above, which runs in any browser.
   </Accordion>
   <Accordion title="I see a response but it does not match what you showed">
-    If the status shows `"degraded"` or `"unhealthy"`, there may be a temporary issue with one of our systems. Check [dev-api-partner.onecluster.co/status](https://dev-api-partner.onecluster.co/status) for a full breakdown, or visit our status page linked in the top navigation bar.
+    If the status shows `"degraded"` or `"unhealthy"`, there may be a temporary issue with one of our systems. Check [dev-api.onecluster.co/status](https://dev-api.onecluster.co/status) for a full breakdown, or visit our status page linked in the top navigation bar.
   </Accordion>
 </AccordionGroup>
 

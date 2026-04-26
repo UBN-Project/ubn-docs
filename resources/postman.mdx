@@ -43,7 +43,7 @@ Download it free at [postman.com](https://www.postman.com/downloads/).
 
     | Variable | Initial Value | Description |
     |---|---|---|
-    | `base_url` | `https://dev-api-partner.onecluster.co` | The sandbox API base URL |
+    | `base_url` | `https://dev-api.onecluster.co` | The sandbox API base URL |
     | `api_key` | _(your sandbox API key)_ | From the portal under API Keys |
     | `partner_id` | _(your Partner ID)_ | From the portal under Account Settings, e.g. `PRT-0001` |
     | `signing_secret` | _(your signing secret)_ | From the portal — required for payment and KYC requests |
@@ -93,13 +93,13 @@ Download it free at [postman.com](https://www.postman.com/downloads/).
 
 | Variable | Where to Find It | Example Value |
 |---|---|---|
-| `base_url` | Fixed — use the sandbox URL during development | `https://dev-api-partner.onecluster.co` |
+| `base_url` | Fixed — use the sandbox URL during development | `https://dev-api.onecluster.co` |
 | `api_key` | Portal → API Keys → Generate Key | `sk_sandbox_abc123...` |
 | `partner_id` | Portal → Account Settings | `PRT-0001` |
 | `signing_secret` | Portal → API Keys → Signing Secret | `signingsecret_abc123...` |
 | `webhook_secret` | Portal → Webhooks → Signing Secret | `whsec_abc123...` |
 
-When you switch to production, create a second Postman environment called `UBN BaaS — Production` with `base_url` set to `https://api-partner.onecluster.co` and your production credentials. Switch between environments using the dropdown in the top-right corner — no changes to the requests themselves are needed.
+When you switch to production, create a second Postman environment called `UBN BaaS — Production` with `base_url` set to `https://api.onecluster.co` and your production credentials. Switch between environments using the dropdown in the top-right corner — no changes to the requests themselves are needed.
 
 ---
 

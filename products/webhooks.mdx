@@ -58,7 +58,7 @@ This means your customers see their wallet credited within seconds of a transfer
     Tell us where to send notifications:
 
     ```bash
-    curl -X POST https://dev-api-partner.onecluster.co/api/v1/collections/webhooks \
+    curl -X POST https://dev-api.onecluster.co/api/v1/collections/webhooks \
       -H "Authorization: ApiKey ubn_sb_your_key_here" \
       -H "Content-Type: application/json" \
       -d '{
@@ -276,7 +276,7 @@ After all 7 retries are exhausted, we stop. The event is marked as `FAILED` in y
 Check the status of recent webhook deliveries — useful for debugging:
 
 ```bash
-curl -X GET "https://dev-api-partner.onecluster.co/api/v1/collections/webhooks/wh_abc123def456/deliveries?page=1&limit=20" \
+curl -X GET "https://dev-api.onecluster.co/api/v1/collections/webhooks/wh_abc123def456/deliveries?page=1&limit=20" \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 
@@ -311,7 +311,7 @@ curl -X GET "https://dev-api-partner.onecluster.co/api/v1/collections/webhooks/w
 To manually replay a failed delivery:
 
 ```bash
-curl -X POST https://dev-api-partner.onecluster.co/api/v1/collections/webhooks/wh_abc123def456/deliveries/del_abc456/replay \
+curl -X POST https://dev-api.onecluster.co/api/v1/collections/webhooks/wh_abc123def456/deliveries/del_abc456/replay \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 
@@ -320,7 +320,7 @@ curl -X POST https://dev-api-partner.onecluster.co/api/v1/collections/webhooks/w
 ## Remove a Webhook
 
 ```bash
-curl -X DELETE https://dev-api-partner.onecluster.co/api/v1/collections/webhooks/wh_abc123def456 \
+curl -X DELETE https://dev-api.onecluster.co/api/v1/collections/webhooks/wh_abc123def456 \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 

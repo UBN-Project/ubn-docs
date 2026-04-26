@@ -67,12 +67,12 @@ Do not submit your production access request until every item on this list is co
 
 **Endpoint:** `POST /api/v1/partners/{partnerId}/production-access-request`
 
-**Base URL:** `https://dev-api-partner.onecluster.co`
+**Base URL:** `https://dev-api.onecluster.co`
 
 Replace `{partnerId}` in the URL with your actual partner ID (from the registration response in Step 1).
 
 ```bash
-curl -X POST https://dev-api-partner.onecluster.co/api/v1/partners/prt_7f3a9b2c1d4e5f6a/production-access-request \
+curl -X POST https://dev-api.onecluster.co/api/v1/partners/prt_7f3a9b2c1d4e5f6a/production-access-request \
   -H "Authorization: ApiKey ubn_sb_your_sandbox_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -152,7 +152,7 @@ You will receive an email from `noreply@unionbank.ng` with the subject **"UBN Ba
 - The UBN BaaS support contacts for production issues
 - A link to the [Incident Response](/resources/support) page
 
-At this point, your production API key is active and you can make live API calls to `https://api-partner.onecluster.co`.
+At this point, your production API key is active and you can make live API calls to `https://api.onecluster.co`.
 
 ---
 

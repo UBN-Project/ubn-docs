@@ -16,6 +16,20 @@ We follow semantic versioning:
 
 ---
 
+## v1.1.0 — 26 April 2026
+
+### 2026-04-26 — Billing & Wallet System
+
+- **New:** Prepaid pay-as-you-go billing with lien-capture-release
+- **New:** Wallet automatically created on go-live approval with permanent Virtual Account
+- **New:** `GET /api/v1/billing/wallet` — view wallet balance and VA funding details
+- **New:** `GET /api/v1/billing/statement` — paginated wallet statement with endpoint tracking
+- **New:** `GET /api/v1/billing/pricing` — current per-call pricing table
+- **New:** `402 Payment Required` response when wallet balance is insufficient
+- **Changed:** Base URLs updated: `dev-api.onecluster.co` (sandbox) and `api.onecluster.co` (production)
+
+---
+
 ## v1.0.0 — 25 March 2026
 
 **Initial public release of the UBN BaaS platform.**
@@ -105,7 +119,7 @@ We follow semantic versioning:
   <Accordion title="Sandbox Environment">
     Full production-equivalent testing environment.
 
-    - Sandbox base URL: `https://dev-api-partner.onecluster.co`
+    - Sandbox base URL: `https://dev-api.onecluster.co`
     - Pre-configured test data for BVN, NIN, CAC, and account number verification.
     - `GET /dev/outbox-preview` — inspect the last 50 emails and SMS messages that would have been sent in production.
     - Identical rate limits to production — backoff logic tested in sandbox works correctly in production.

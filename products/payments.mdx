@@ -49,7 +49,7 @@ Every payment you initiate must follow these three steps in order. Skipping step
     <Tabs>
       <Tab title="cURL">
         ```bash
-        curl -X GET "https://dev-api-partner.onecluster.co/api/v1/payments/enquiry?accountNumber=0123456789&bankCode=058" \
+        curl -X GET "https://dev-api.onecluster.co/api/v1/payments/enquiry?accountNumber=0123456789&bankCode=058" \
           -H "Authorization: ApiKey ubn_sb_your_key_here"
         ```
       </Tab>
@@ -61,7 +61,7 @@ Every payment you initiate must follow these three steps in order. Skipping step
         });
 
         const response = await fetch(
-          `https://dev-api-partner.onecluster.co/api/v1/payments/enquiry?${params}`,
+          `https://dev-api.onecluster.co/api/v1/payments/enquiry?${params}`,
           {
             headers: {
               'Authorization': 'ApiKey ubn_sb_your_key_here',
@@ -101,7 +101,7 @@ Every payment you initiate must follow these three steps in order. Skipping step
     <Tabs>
       <Tab title="cURL">
         ```bash
-        curl -X POST https://dev-api-partner.onecluster.co/api/v1/payments/transfer \
+        curl -X POST https://dev-api.onecluster.co/api/v1/payments/transfer \
           -H "Authorization: ApiKey ubn_sb_your_key_here" \
           -H "Content-Type: application/json" \
           -H "X-Idempotency-Key: $(uuidgen)" \
@@ -141,7 +141,7 @@ Every payment you initiate must follow these three steps in order. Skipping step
           .digest('hex');
 
         const response = await fetch(
-          'https://dev-api-partner.onecluster.co/api/v1/payments/transfer',
+          'https://dev-api.onecluster.co/api/v1/payments/transfer',
           {
             method: 'POST',
             headers: {
@@ -185,7 +185,7 @@ Every payment you initiate must follow these three steps in order. Skipping step
     <Tabs>
       <Tab title="cURL">
         ```bash
-        curl -X GET https://dev-api-partner.onecluster.co/api/v1/payments/TXN-20260325-ABC123/status \
+        curl -X GET https://dev-api.onecluster.co/api/v1/payments/TXN-20260325-ABC123/status \
           -H "Authorization: ApiKey ubn_sb_your_key_here"
         ```
       </Tab>
@@ -194,7 +194,7 @@ Every payment you initiate must follow these three steps in order. Skipping step
         async function waitForPayment(transactionRef, maxAttempts = 12) {
           for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             const response = await fetch(
-              `https://dev-api-partner.onecluster.co/api/v1/payments/${transactionRef}/status`,
+              `https://dev-api.onecluster.co/api/v1/payments/${transactionRef}/status`,
               { headers: { 'Authorization': 'ApiKey ubn_sb_your_key_here' } }
             );
 

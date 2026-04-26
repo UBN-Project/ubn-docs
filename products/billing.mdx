@@ -1,0 +1,115 @@
+---
+title: "Billing & Wallet"
+description: "How API billing works — prepaid wallet, pay-as-you-go, lien-capture-release"
+---
+
+## How Billing Works
+
+UBN BaaS uses a **prepaid pay-as-you-go** billing model. Every partner has a wallet that must have sufficient balance before making API calls. There are no monthly subscriptions, no credit terms, and no post-pay invoices.
+
+<Info>
+  Your wallet is automatically created when your go-live request is approved. You do not need to create it manually.
+</Info>
+
+### The Billing Cycle
+
+<Steps>
+  <Step title="Fund your wallet">
+    Transfer money to your dedicated Virtual Account (VA) at Union Bank. The VA number is displayed on your Partner Dashboard. The transferred amount is instantly credited to your wallet balance.
+  </Step>
+  <Step title="Make API calls">
+    Every billable API call checks your wallet balance. If you have sufficient funds, the call proceeds. If not, you receive a `402 Payment Required` error and the call is blocked.
+  </Step>
+  <Step title="Automatic billing">
+    When an API call is made, the cost is placed as a **hold** (lien) on your wallet. After the call completes successfully, the hold is converted to a permanent charge. If the call fails, the hold is released and your balance is restored.
+  </Step>
+</Steps>
+
+### Lien-Capture-Release
+
+Every billable API call follows this pattern:
+
+| Phase | What happens | Your balance |
+|-------|-------------|-------------|
+| **Lien (Hold)** | The cost of the API call is reserved from your available balance | Available balance decreases |
+| **Capture (Charge)** | The API call succeeded — the hold becomes a permanent charge | Balance decreases permanently |
+| **Release (Refund)** | The API call failed — the hold is released | Available balance is restored |
+
+<Note>
+  If an API call times out (status unknown), the hold remains active for up to 24 hours. If the status is still unknown after 24 hours, the hold is automatically released and your balance is restored.
+</Note>
+
+### Balance Fields
+
+Your wallet has three balance fields:
+
+| Field | Meaning |
+|-------|---------|
+| **Balance** | Total credits minus total charges — your overall API credit |
+| **Liened Amount** | Sum of all active holds (in-flight API calls) |
+| **Available Balance** | `Balance - Liened Amount` — what you can spend on new API calls |
+
+### Pricing
+
+API calls are billed at a flat rate per product:
+
+| API Product | Price per Call (NGN) |
+|-------------|---------------------|
+| Accounts | 10.00 |
+| Payments | 25.00 |
+| Collections | 15.00 |
+| KYC | 50.00 |
+
+<Warning>
+  Prices shown are indicative and may change. Current prices are always available on your Partner Dashboard under **Billing > Pricing**.
+</Warning>
+
+### Wallet Statement
+
+Your wallet statement records every transaction:
+
+| Type | Description |
+|------|-------------|
+| **Credit** | Wallet funding from your VA payment |
+| **Hold** | API call lien placed (in-flight) |
+| **Debit** | API call charged (call succeeded) |
+| **Release** | API call refunded (call failed or timed out) |
+
+Each statement entry includes:
+- Date and time
+- Transaction type
+- The API endpoint that was called (for API charges)
+- Amount
+- Running balance
+
+View your statement on the Partner Dashboard under **Billing > Statement**.
+
+### Insufficient Balance
+
+If your available balance is less than the cost of an API call, the request is rejected with:
+
+```json
+{
+  "success": false,
+  "responseCode": "E402",
+  "message": "Insufficient wallet balance",
+  "data": {
+    "requiredAmount": 25.00,
+    "availableBalance": 10.00
+  }
+}
+```
+
+**The API call is NOT forwarded to the downstream service.** No action is taken. Fund your wallet and retry.
+
+### Wallet Lifecycle
+
+| Status | Meaning | Can make API calls? | Can receive funding? |
+|--------|---------|---------------------|---------------------|
+| **Active** | Normal operating state | Yes | Yes |
+| **Suspended** | Admin-initiated temporary block | No | Yes |
+| **Closed** | Permanently deactivated | No | No |
+
+<Tip>
+  If your wallet is suspended, you can still fund it via your VA. Once unsuspended, your accumulated balance is available for API calls immediately.
+</Tip>

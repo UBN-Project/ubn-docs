@@ -13,8 +13,8 @@ Most issues can be resolved by reading the error response carefully, checking th
 
     General technical support, integration questions, and quota increase requests. Response within 1 business day.
   </Card>
-  <Card title="Self-Service Portal" icon="browser" href="https://dev-api-partner.onecluster.co">
-    **dev-api-partner.onecluster.co**
+  <Card title="Self-Service Portal" icon="browser" href="https://dev-api.onecluster.co">
+    **dev-api.onecluster.co**
 
     Manage API keys, view webhook delivery history, review your KYB status, and submit production access requests — without contacting support.
   </Card>
@@ -40,11 +40,11 @@ Most integration issues have a fast self-serve resolution. Run through this chec
     <Check>Is the API returning a healthy status?</Check>
 
     ```bash
-    curl https://dev-api-partner.onecluster.co/health
+    curl https://dev-api.onecluster.co/health
     # Expected: {"status": "healthy", "timestamp": "..."}
     ```
 
-    If the health endpoint is not returning `healthy`, there may be a platform incident in progress. Check the status page at [dev-api-partner.onecluster.co/status](https://dev-api-partner.onecluster.co/status) before investigating your own integration.
+    If the health endpoint is not returning `healthy`, there may be a platform incident in progress. Check the status page at [dev-api.onecluster.co/status](https://dev-api.onecluster.co/status) before investigating your own integration.
   </Accordion>
 
   <Accordion title="Check your API key">
@@ -61,8 +61,8 @@ Most integration issues have a fast self-serve resolution. Run through this chec
 
     | Environment | Base URL |
     |---|---|
-    | Sandbox | `https://dev-api-partner.onecluster.co` |
-    | Production | `https://api-partner.onecluster.co` |
+    | Sandbox | `https://dev-api.onecluster.co` |
+    | Production | `https://api.onecluster.co` |
 
     A common error is copying the sandbox URL into production configuration or vice versa.
   </Accordion>
@@ -126,7 +126,7 @@ Timestamp: 2026-03-25T14:32:00+01:00
 
 Error received:
   HTTP Status: 422
-  type: "https://errors.api-partner.onecluster.co/validation-error"
+  type: "https://errors.api.onecluster.co/validation-error"
   title: "Validation Error"
   detail: "amount must be greater than 0"
 
@@ -180,7 +180,7 @@ What happened instead:
   <Accordion title="Transfer stuck in PENDING">
     Transfers via NIP should complete within 30 seconds. If a transfer remains `PENDING` for longer:
 
-    1. Check the NIP network status at [dev-api-partner.onecluster.co/status](https://dev-api-partner.onecluster.co/status).
+    1. Check the NIP network status at [dev-api.onecluster.co/status](https://dev-api.onecluster.co/status).
     2. Poll `GET /api/v1/payments/{reference}` for up to 5 minutes before treating it as a failure.
     3. If still `PENDING` after 5 minutes in production, email baas-incidents@unionbank.ng with the `X-Correlation-ID` and payment reference.
 

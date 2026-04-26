@@ -48,7 +48,7 @@ Before you start, you need:
 <Tabs>
   <Tab title="cURL">
     ```bash
-    curl -X POST https://dev-api-partner.onecluster.co/api/v1/accounts \
+    curl -X POST https://dev-api.onecluster.co/api/v1/accounts \
       -H "Authorization: ApiKey ubn_sb_your_key_here" \
       -H "Content-Type: application/json" \
       -H "X-Idempotency-Key: $(uuidgen)" \
@@ -62,7 +62,7 @@ Before you start, you need:
     ```javascript
     const { randomUUID } = require('crypto');
 
-    const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/accounts', {
+    const response = await fetch('https://dev-api.onecluster.co/api/v1/accounts', {
       method: 'POST',
       headers: {
         'Authorization': 'ApiKey ubn_sb_your_key_here',
@@ -85,7 +85,7 @@ Before you start, you need:
     import requests
 
     response = requests.post(
-        'https://dev-api-partner.onecluster.co/api/v1/accounts',
+        'https://dev-api.onecluster.co/api/v1/accounts',
         headers={
             'Authorization': 'ApiKey ubn_sb_your_key_here',
             'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ Before you start, you need:
 To create a temporary account, set `accountType` to `DYNAMIC` and pass an `expiresAt` timestamp in ISO 8601 format:
 
 ```bash
-curl -X POST https://dev-api-partner.onecluster.co/api/v1/accounts \
+curl -X POST https://dev-api.onecluster.co/api/v1/accounts \
   -H "Authorization: ApiKey ubn_sb_your_key_here" \
   -H "Content-Type: application/json" \
   -H "X-Idempotency-Key: $(uuidgen)" \
@@ -147,7 +147,7 @@ curl -X POST https://dev-api-partner.onecluster.co/api/v1/accounts \
 ## Check Account Balance
 
 ```bash
-curl -X GET https://dev-api-partner.onecluster.co/api/v1/accounts/9023456789/balance \
+curl -X GET https://dev-api.onecluster.co/api/v1/accounts/9023456789/balance \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 
@@ -174,7 +174,7 @@ curl -X GET https://dev-api-partner.onecluster.co/api/v1/accounts/9023456789/bal
 Pull a list of transactions for a virtual account within a date range. Dates follow the `YYYY-MM-DD` format.
 
 ```bash
-curl -X GET "https://dev-api-partner.onecluster.co/api/v1/accounts/9023456789/statement?from=2026-03-01&to=2026-03-25&page=1&limit=20" \
+curl -X GET "https://dev-api.onecluster.co/api/v1/accounts/9023456789/statement?from=2026-03-01&to=2026-03-25&page=1&limit=20" \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 

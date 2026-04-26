@@ -40,7 +40,7 @@ You will need to upload all required documents. Optional documents are not manda
 
 ### Option A: Upload via the web portal
 
-1. Log in at [dev-api-partner.onecluster.co](https://dev-api-partner.onecluster.co)
+1. Log in at [dev-api.onecluster.co](https://dev-api.onecluster.co)
 2. Navigate to **Onboarding** → **Documents**
 3. Upload each document in the appropriate slot
 4. Click **Submit for Review**
@@ -53,12 +53,12 @@ The portal shows the upload progress for each file and confirms when the submiss
 
 **Endpoint:** `POST /api/v1/kyb/documents`
 
-**Base URL:** `https://dev-api-partner.onecluster.co`
+**Base URL:** `https://dev-api.onecluster.co`
 
 This endpoint accepts **multipart form data** — a way of sending files over the internet alongside text fields in a single request. It is different from the JSON requests you made in Steps 1 and 2. The `-F` flag in `curl` is how you send multipart data.
 
 ```bash
-curl -X POST https://dev-api-partner.onecluster.co/api/v1/kyb/documents \
+curl -X POST https://dev-api.onecluster.co/api/v1/kyb/documents \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -F "partnerId=prt_7f3a9b2c1d4e5f6a" \
   -F "certificateOfIncorporation=@/path/to/certificate.pdf;type=application/pdf" \

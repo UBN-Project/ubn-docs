@@ -1,0 +1,21 @@
+---
+title: "Get Pricing"
+api: "GET /api/v1/billing/pricing"
+description: "Returns the current per-call pricing for each API product."
+---
+
+<ResponseExample>
+```json
+{
+  "success": true,
+  "responseCode": "00",
+  "message": "Request processed successfully",
+  "data": [
+    { "apiProduct": "ACCOUNTS", "pricePerCall": 10.00 },
+    { "apiProduct": "PAYMENTS", "pricePerCall": 25.00 },
+    { "apiProduct": "COLLECTIONS", "pricePerCall": 15.00 },
+    { "apiProduct": "KYC", "pricePerCall": 50.00 }
+  ]
+}
+```
+</ResponseExample>

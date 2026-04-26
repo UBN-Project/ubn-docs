@@ -1,0 +1,31 @@
+---
+title: "Get Wallet"
+api: "GET /api/v1/billing/wallet"
+description: "Returns your wallet balance, available balance, liened amount, and VA funding details."
+---
+
+<ResponseExample>
+```json
+{
+  "success": true,
+  "responseCode": "00",
+  "message": "Request processed successfully",
+  "data": {
+    "walletId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "name": "PEGASUS/ACME FINTECH",
+    "balance": 10000.00,
+    "availableBalance": 9750.00,
+    "lienedAmount": 250.00,
+    "currency": "NGN",
+    "status": "Active",
+    "virtualAccount": {
+      "accountNumber": "0912345678",
+      "bankName": "Union Bank of Nigeria",
+      "bankCode": "032"
+    }
+  }
+}
+```
+</ResponseExample>
+
+Fund your wallet by transferring money to the `accountNumber` shown in the `virtualAccount` object. The amount will be credited to your balance instantly.

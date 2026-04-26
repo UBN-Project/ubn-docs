@@ -31,8 +31,8 @@ Your API key prefix tells you which environment it belongs to. The platform enfo
 
 | Prefix | Environment | Base URL |
 |--------|-------------|----------|
-| `ubn_sb_` | Sandbox | `https://dev-api-partner.onecluster.co` |
-| `ubn_pk_` | Production | `https://api-partner.onecluster.co` |
+| `ubn_sb_` | Sandbox | `https://dev-api.onecluster.co` |
+| `ubn_pk_` | Production | `https://api.onecluster.co` |
 
 Using the wrong key for an environment returns a `403 ENVIRONMENT_MISMATCH` error immediately. See [Error Reference](/api-reference/errors) for details.
 
@@ -41,13 +41,13 @@ Using the wrong key for an environment returns a `403 ENVIRONMENT_MISMATCH` erro
 <CodeGroup>
 
 ```bash curl
-curl https://dev-api-partner.onecluster.co/api/v1/accounts \
+curl https://dev-api.onecluster.co/api/v1/accounts \
   --header "Authorization: ApiKey ubn_sb_your_key_here" \
   --header "Content-Type: application/json"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/accounts', {
+const response = await fetch('https://dev-api.onecluster.co/api/v1/accounts', {
   method: 'GET',
   headers: {
     'Authorization': 'ApiKey ubn_sb_your_key_here',
@@ -62,7 +62,7 @@ const data = await response.json();
 import requests
 
 response = requests.get(
-    'https://dev-api-partner.onecluster.co/api/v1/accounts',
+    'https://dev-api.onecluster.co/api/v1/accounts',
     headers={
         'Authorization': 'ApiKey ubn_sb_your_key_here',
         'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ const body = {
 
 const signature = signRequest(body, process.env.UBN_SIGNING_SECRET);
 
-const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/payments/transfer', {
+const response = await fetch('https://dev-api.onecluster.co/api/v1/payments/transfer', {
   method: 'POST',
   headers: {
     'Authorization': `ApiKey ${process.env.UBN_API_KEY}`,
@@ -186,7 +186,7 @@ body = {
 signature = sign_request(body, os.environ['UBN_SIGNING_SECRET'])
 
 response = requests.post(
-    'https://dev-api-partner.onecluster.co/api/v1/payments/transfer',
+    'https://dev-api.onecluster.co/api/v1/payments/transfer',
     json=body,
     headers={
         'Authorization': f"ApiKey {os.environ['UBN_API_KEY']}",
@@ -232,7 +232,7 @@ Your client certificate is issued during production onboarding. Contact your UBN
 ### Using mTLS with curl
 
 ```bash
-curl https://api-partner.onecluster.co/api/v1/payments/transfer \
+curl https://api.onecluster.co/api/v1/payments/transfer \
   --cert client.crt \
   --key client.key \
   --header "Authorization: ApiKey ubn_pk_your_production_key" \
@@ -266,7 +266,7 @@ const signature = `sha256=${crypto
   .update(bodyString)
   .digest('hex')}`;
 
-const response = await fetch('https://api-partner.onecluster.co/api/v1/payments/transfer', {
+const response = await fetch('https://api.onecluster.co/api/v1/payments/transfer', {
   method: 'POST',
   agent,   // attaches the mTLS client certificate
   headers: {
@@ -333,7 +333,7 @@ idempotency_key=$(uuidgen)
 ### Detecting a replay
 
 ```javascript
-const response = await fetch('https://dev-api-partner.onecluster.co/api/v1/payments/transfer', {
+const response = await fetch('https://dev-api.onecluster.co/api/v1/payments/transfer', {
   method: 'POST',
   headers: {
     'Authorization': `ApiKey ${process.env.UBN_API_KEY}`,
