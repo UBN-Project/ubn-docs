@@ -1,4 +1,16 @@
 ---
 title: "Health Check"
-openapi: "GET /health"
+api: "GET /health"
+description: "Check if the API gateway is online. No authentication required."
+auth: none
 ---
+
+<Note>
+  This endpoint does **not** require an API key or any authentication. You can call it without any headers to verify connectivity.
+</Note>
+
+```bash
+curl https://dev-api.onecluster.co/health
+```
+
+Returns `Healthy` as plain text if the gateway is online.

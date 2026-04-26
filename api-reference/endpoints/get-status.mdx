@@ -1,4 +1,16 @@
 ---
 title: "System Status"
-openapi: "GET /status"
+api: "GET /status"
+description: "Detailed system status for all API products. No authentication required."
+auth: none
 ---
+
+<Note>
+  This endpoint does **not** require an API key or any authentication.
+</Note>
+
+```bash
+curl https://dev-api.onecluster.co/status
+```
+
+Returns a JSON object with the status of the gateway and all downstream services.
