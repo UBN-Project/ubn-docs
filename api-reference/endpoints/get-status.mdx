@@ -1,17 +1,16 @@
 ---
 title: "System Status"
+api: "GET https://dev-api.onecluster.co/status"
 description: "Detailed system status for all API products. No authentication required."
+hideApiMarker: false
+authMethod: "none"
 ---
-
-## `GET /status`
 
 Returns the health status of the gateway and all downstream services. **No authentication required.**
 
-### Request
-
-```bash
-curl https://dev-api.onecluster.co/status
-```
+<Note>
+  This endpoint is public. Just hit send -- no keys needed.
+</Note>
 
 ### Response
 

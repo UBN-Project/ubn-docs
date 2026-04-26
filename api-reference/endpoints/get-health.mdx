@@ -1,27 +1,24 @@
 ---
 title: "Health Check"
+api: "GET https://dev-api.onecluster.co/health"
 description: "Check if the API gateway is online. No authentication required."
+hideApiMarker: false
+authMethod: "none"
 ---
-
-## `GET /health`
 
 Check if the API gateway is online. **No authentication required** -- no API key, no headers needed.
 
-### Request
-
-```bash
-curl https://dev-api.onecluster.co/health
-```
+<Note>
+  This endpoint is public. Just hit send -- no keys needed.
+</Note>
 
 ### Response
 
-Returns `Healthy` as plain text with a `200 OK` status if the gateway is online.
+Returns `Healthy` as plain text with a `200 OK` status.
 
 ```
 Healthy
 ```
-
-If the gateway is down or unreachable, you will get a connection error or a non-200 status code.
 
 <Tip>
   Use this endpoint for uptime monitoring and as a preflight check before making authenticated API calls.
