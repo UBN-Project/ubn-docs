@@ -206,7 +206,8 @@
     }
   },
   "openapi": [
-    "api-reference/openapi.yaml"
+    "api-reference/openapi.yaml",
+    "api-reference/openapi-public.yaml"
   ],
   "footerSocials": {
     "website": "https://unionbank.ng",

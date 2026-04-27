@@ -1,30 +1,12 @@
 ---
 title: "System Status"
+openapi: "GET /status"
 description: "Detailed system status for all API products. No authentication required."
-api: "GET https://dev-api.onecluster.co/status"
-authMethod: "none"
 ---
 
-Returns the health status of the gateway and all downstream services. **No authentication required** -- just hit Send.
-
-### Response
-
-```json
-{
-  "status": "healthy",
-  "gatewayVersion": "1.0.0",
-  "services": {
-    "accountsApi": "healthy",
-    "paymentsApi": "healthy",
-    "collectionsApi": "healthy",
-    "kycApi": "healthy",
-    "bankingApi": "healthy",
-    "webhookDispatcher": "healthy",
-    "authentication": "healthy",
-    "developerPortal": "healthy"
-  }
-}
-```
+<Note>
+  This endpoint is **public** -- no API key or authentication needed. Just hit **Send**.
+</Note>
 
 ### Status Values
 
@@ -33,7 +15,3 @@ Returns the health status of the gateway and all downstream services. **No authe
 | `healthy` | Service is online and responding normally |
 | `degraded` | Service is responding but with elevated latency or partial failures |
 | `unhealthy` | Service is not responding -- operations may fail |
-
-<Warning>
-  If any service shows `unhealthy`, API calls to that product may fail or time out. Check the [Changelog](/resources/changelog) or contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) for incident updates.
-</Warning>

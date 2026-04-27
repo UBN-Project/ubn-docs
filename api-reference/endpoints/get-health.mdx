@@ -1,20 +1,9 @@
 ---
 title: "Health Check"
+openapi: "GET /health"
 description: "Check if the API gateway is online. No authentication required."
-api: "GET https://dev-api.onecluster.co/health"
-authMethod: "none"
 ---
 
-Check if the API gateway is online. **No authentication required** -- just hit Send.
-
-### Response
-
-Returns `Healthy` as plain text with a `200 OK` status.
-
-```
-Healthy
-```
-
-<Tip>
-  Use this endpoint for uptime monitoring and as a preflight check before making authenticated API calls.
-</Tip>
+<Note>
+  This endpoint is **public** -- no API key or authentication needed. Just hit **Send**.
+</Note>

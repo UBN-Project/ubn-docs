@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Union Bank BaaS API — Public Endpoints
+  version: "1.0"
+  description: Public endpoints that do not require authentication.
+
+servers:
+  - url: https://dev-api.onecluster.co
+    description: Sandbox
+  - url: https://api.onecluster.co
+    description: Production
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Check if the API gateway is online. No authentication required.
+      operationId: getHealth
+      tags: [Health]
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Healthy"
+
+  /status:
+    get:
+      summary: System Status
+      description: |
+        Returns the status of each API product and whether any circuit breakers are open.
+        No authentication required.
+      operationId: getStatus
+      tags: [Health]
+      responses:
+        "200":
+          description: Detailed status of all services
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  gatewayVersion:
+                    type: string
+                    example: "1.0.0"
+                  services:
+                    type: object
+                    properties:
+                      accountsApi:
+                        type: string
+                      paymentsApi:
+                        type: string
+                      collectionsApi:
+                        type: string
+                      kycApi:
+                        type: string
+                      bankingApi:
+                        type: string
+                      webhookDispatcher:
+                        type: string
+                      authentication:
+                        type: string
+                      developerPortal:
+                        type: string
