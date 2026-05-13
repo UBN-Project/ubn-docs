@@ -1,0 +1,23 @@
+name: Sync to Azure DevOps
+
+on:
+  push:
+    branches:
+      - main
+      - development
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to Azure DevOps
+        run: |
+          REPO_NAME="${{ github.event.repository.name }}"
+          AZURE_REPO_URL="https://$(echo '${{ secrets.AZURE_DEVOPS_PAT }}' | tr -d '\n')@dev.azure.com/UBNDOTNET/API_MNGMT_SUITE/_git/${REPO_NAME}"
+          git remote add azure "${AZURE_REPO_URL}" 2>/dev/null || git remote set-url azure "${AZURE_REPO_URL}"
+          git push azure "${{ github.ref_name }}" --force
