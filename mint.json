@@ -19,7 +19,7 @@
   "topbarLinks": [
     {
       "name": "Status",
-      "url": "https://api-partner.onecluster.co/api/v1/status"
+      "url": "https://status.onecluster.co"
     },
     {
       "name": "Support",
@@ -165,6 +165,7 @@
       "pages": [
         "resources/sandbox-guide",
         "resources/postman",
+        "resources/status",
         "resources/changelog",
         "resources/support"
       ]

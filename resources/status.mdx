@@ -1,0 +1,53 @@
+---
+title: "System Status"
+description: "Live operational status for every UnionVelocity service, hosted at status.onecluster.co."
+---
+
+We publish real-time operational status at **[status.onecluster.co](https://status.onecluster.co)**. Bookmark it. Check there first whenever an API call starts behaving differently from what your tests showed.
+
+<Card title="Open the status page" icon="signal-stream" href="https://status.onecluster.co" horizontal>
+  Live health of every public service, current incidents, and historical uptime.
+</Card>
+
+## What you'll see
+
+The status page reports independently for each service that your integration depends on:
+
+- **Partner Gateway** : the host you send API requests to (`api-partner.onecluster.co`)
+- **Accounts API** : virtual account creation, balance, statement
+- **Payments API** : NIP / NEFT transfers and payment status
+- **Collections API** : inbound credits and collection accounts
+- **KYC API** : BVN, NIN, CAC verification
+- **Webhooks** : outbound delivery to your callback URLs
+- **Partner Portal** : the dashboard at `ubn-ui.onecluster.co`
+
+Each service shows one of four states: **Operational**, **Degraded performance**, **Partial outage**, or **Major outage**. Open incidents and recent history appear on the same page.
+
+## During an incident
+
+When something breaks, the status page is the source of truth. Our team posts updates there as the incident progresses, including:
+
+- The services affected and the user-visible symptoms
+- The current best estimate of impact (which requests are failing, error rates, latency)
+- What our team is doing right now
+- When we expect the next update
+
+If you're running production traffic and you see elevated error rates that aren't yet on the status page, contact support. We'd rather hear from you and find nothing than miss something.
+
+## Programmatic status check
+
+For automated checks (CI smoke tests, health probes, dashboards), call the JSON status endpoint directly:
+
+```bash
+curl https://api-partner.onecluster.co/api/v1/status
+```
+
+This returns a structured response with the same per-service states shown on the status page. Use it from your own monitoring rather than scraping the HTML page.
+
+## Subscribe to updates
+
+Open [status.onecluster.co](https://status.onecluster.co) and use the subscription option in the page header to get notified by email whenever an incident is opened, updated, or resolved.
+
+<Tip>
+  Most production teams subscribe at least one shared inbox (e.g. `oncall@yourcompany.ng`) and one personal address. That way someone always gets the notification, even on weekends.
+</Tip>

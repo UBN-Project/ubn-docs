@@ -1,118 +1,109 @@
 ---
 title: "API Changelog"
-description: "All changes to the UBN BaaS API, newest first"
+description: "Public changes to the UnionVelocity API, newest first."
 ---
 
-This changelog records every release of the UBN BaaS API. Entries are listed newest first. Each entry shows the version, release date, and a complete list of what changed.
+Every public-facing change to the UnionVelocity API lives here, newest first. Each entry shows the version, the release date, and a complete list of what changed for you.
 
 We follow semantic versioning:
-- **Major version** (v1 → v2): breaking changes. You will need to update your integration.
-- **Minor version** (v1.0 → v1.1): new features added in a backwards-compatible way.
-- **Patch version** (v1.0.0 → v1.0.1): bug fixes that do not affect your integration's behaviour.
+- **Major** (v1 to v2): breaking changes. You'll need to update your integration before the cutover date.
+- **Minor** (v1.0 to v1.1): new features added in a backwards-compatible way. Your existing calls keep working.
+- **Patch** (v1.0.0 to v1.0.1): bug fixes that don't change behaviour you can observe from outside.
 
 <Info>
-  Breaking changes are announced with a minimum 90-day deprecation notice before the old behaviour is removed. Deprecation notices are sent by email to the technical contact on your partner account and posted here.
+  Breaking changes get a minimum 90-day deprecation notice before the old behaviour is removed. We email the technical contact on your partner account and post the notice here.
 </Info>
 
 ---
 
-## v1.1.0 (26 April 2026)
+## Documentation refresh, 30 June 2026
 
-### 2026-04-26: Billing & Wallet System
+This release is documentation-only. No API behaviour changed.
 
-- **New:** Prepaid pay-as-you-go billing with lien-capture-release
-- **New:** Wallet automatically created on go-live approval with permanent Virtual Account
-- **New:** `GET /api/v1/billing/wallet`: view wallet balance and VA funding details
-- **New:** `GET /api/v1/billing/statement`: paginated wallet statement with endpoint tracking
-- **New:** `GET /api/v1/billing/pricing`: current per-call pricing table
-- **New:** `402 Payment Required` response when wallet balance is insufficient
-- **Changed:** Base URLs updated: `api-partner.onecluster.co` (sandbox) and `api.onecluster.co` (production)
+- **Renamed:** the product is now **UnionVelocity** (previously Pegasus). The brand change is visible in the docs, the marketing site, and partner-facing UI. Your API keys, base URLs, and integration code do not change.
+- **Portal-only flows moved out of the public API reference.** Onboarding, API key management, and production access were never meant to be called from your code: they happen in the partner portal at [ubn-ui.onecluster.co](https://ubn-ui.onecluster.co). The endpoint pages have been removed from the public docs. The portal flows themselves haven't changed.
+- **Sandbox base URL canonicalised:** the sandbox is reached at `https://api-partner.onecluster.co`. The legacy `dev-api.onecluster.co` host is being retired. Update your sandbox config if you still point at the old host.
+- **Editorial refresh:** clearer language, fewer hedges, more direct examples. If a page reads better than the last time you visited, that's why.
+- **New:** [System Status](/resources/status) page with a link to [status.onecluster.co](https://status.onecluster.co) for live operational health.
 
 ---
 
-## v1.0.0 (25 March 2026)
+## v1.1.0, 26 April 2026
 
-**Initial public release of the UBN BaaS platform.**
+### Billing & Wallet
 
-### New Features
+- **New:** prepaid pay-as-you-go billing with a lien-capture-release model on every chargeable call.
+- **New:** wallet is auto-created on go-live approval, with a permanent Virtual Account for funding.
+- **New:** `GET /api/v1/billing/wallet` returns your wallet balance and VA funding details.
+- **New:** `GET /api/v1/billing/statement` returns a paginated wallet statement with per-endpoint cost tracking.
+- **New:** `GET /api/v1/billing/pricing` returns the current per-call pricing table.
+- **New:** `402 Payment Required` is returned when your wallet balance is below the cost of the call. Top up and retry.
+- **Changed:** sandbox base URL is now `https://api-partner.onecluster.co`. Production remains `https://api.onecluster.co`.
+
+---
+
+## v1.0.0, 25 March 2026
+
+**Initial public release of the UnionVelocity platform.**
 
 <AccordionGroup>
-  <Accordion title="Partner Onboarding">
-    Partners can now register, verify their email, and complete Know Your Business (KYB) review entirely through the API and portal.
-
-    - `POST /api/Auth/register`: create a partner account with company name, email, and contact details.
-    - `POST /api/Auth/verifyEmailCode`: verify your email address with the OTP sent at registration.
-    - `POST /api/Auth/resendVerificationEmail`: request a new OTP if yours expired.
-    - KYB document submission: upload Certificate of Incorporation, Director ID, and Utility Bill for compliance review.
-    - Production access request workflow: once sandbox testing is complete, submit a go-live request for review.
-  </Accordion>
-
   <Accordion title="KYC Verification">
-    Automated identity verification for individuals and businesses, with PII masking on all responses.
+    Automated identity verification for individuals and businesses. PII is masked in every response.
 
-    - `POST /api/v1/kyc/bvn/verify`: verify a Bank Verification Number (BVN) against the central bank registry. Returns name match and masked identity fields.
-    - `POST /api/v1/kyc/nin/verify`: verify a National Identification Number (NIN) against the NIMC database. Returns name match and masked identity fields.
-    - `POST /api/v1/kyc/cac/lookup`: look up a company by its Corporate Affairs Commission (CAC) registration number. Returns company status, registered address, and director information.
+    - `POST /api/v1/kyc/bvn/verify`: verify a Bank Verification Number against the central bank registry. Returns the name-match result and masked identity fields.
+    - `POST /api/v1/kyc/nin/verify`: verify a National Identification Number against the NIMC database. Returns the name-match result and masked identity fields.
+    - `POST /api/v1/kyc/cac/lookup`: look up a company by its Corporate Affairs Commission registration number. Returns company status, registered address, and director information.
 
-    All three endpoints mask PII in responses: BVN, NIN, date of birth, and phone numbers are never returned in full.
-  </Accordion>
-
-  <Accordion title="API Key Management">
-    Full lifecycle management for API credentials.
-
-    - Generate API keys (sandbox and production, scoped separately).
-    - Rotate keys: generate a new key while the old one remains active for a grace period.
-    - Revoke keys: immediately invalidate a key. Revocation is instant and irreversible.
-    - Key hashing: raw keys are never stored; only Argon2id hashes are retained.
+    BVN, NIN, date of birth, and phone numbers are never returned in full.
   </Accordion>
 
   <Accordion title="Virtual Accounts">
     Create and manage virtual bank accounts issued under Union Bank's licence.
 
-    - `POST /api/v1/accounts`: create a virtual account. Two types supported:
-      - **STATIC**: a permanent account number assigned to a customer. Suitable for wallets, savings products, and any use case where the customer has a stable account identity.
-      - **DYNAMIC**: a single-use account number generated for a specific expected payment. Expires after the payment is received or after a configurable timeout.
+    - `POST /api/v1/accounts`: create a virtual account. Two types:
+      - **STATIC**: a permanent account number assigned to a customer. Right for wallets, savings products, and any case where the customer has a stable account identity.
+      - **DYNAMIC**: a single-use account number for one specific expected payment. Closes after the payment arrives or after a configurable timeout.
     - `GET /api/v1/accounts/{accountNumber}`: retrieve account details and current balance.
-    - `GET /api/v1/accounts/{accountNumber}/transactions`: list transaction history with pagination.
+    - `GET /api/v1/accounts/{accountNumber}/statement`: paginated transaction history.
   </Accordion>
 
   <Accordion title="Payments">
-    Initiate outbound transfers through the Nigerian interbank payment networks.
+    Send outbound transfers across the Nigerian interbank network.
 
-    - `POST /api/v1/payments/account-enquiry`: look up an account at any Nigerian bank before sending a transfer. Returns account name for confirmation.
-    - `POST /api/v1/payments/transfer`: initiate an outbound transfer. Two schemes supported:
-      - **NIP (NIBSS Instant Payment)**: real-time, 24/7, settles in seconds. Maximum ₦10,000,000 per transaction.
-      - **NEFT (Nigeria Electronic Funds Transfer)**: scheduled batch, settles same day or next day. No maximum limit.
-    - Idempotency keys supported on all transfer requests. Duplicate requests with the same key return the original response without creating a second transaction.
-    - `GET /api/v1/payments/{reference}`: query the status of a payment by its reference number.
+    - `POST /api/v1/payments/account-enquiry`: confirm a destination account name before sending. Always do this first; you'll catch typos before money moves.
+    - `POST /api/v1/payments/transfer`: initiate an outbound transfer. Two schemes:
+      - **NIP (NIBSS Instant Payment)**: real-time, 24/7, seconds to settle. Maximum ₦10,000,000 per transaction.
+      - **NEFT (Nigeria Electronic Funds Transfer)**: scheduled batch, same-day or next-day settlement. No per-transaction maximum.
+    - Idempotency is supported on every transfer. Send the same request with the same idempotency key twice, you'll get back the original response, not a second transaction.
+    - `GET /api/v1/payments/{reference}/status`: poll the final outcome.
   </Accordion>
 
   <Accordion title="Collections">
     Receive inbound payments from customers into your virtual accounts.
 
-    - Virtual collection accounts: each virtual account can receive inbound NIP transfers from any Nigerian bank.
-    - Real-time webhook notifications on every incoming credit. Your system is notified the moment funds arrive.
-    - `GET /api/v1/accounts/{accountNumber}/transactions`: query received payments with full metadata including the sender's name, bank, and narration.
+    - Each virtual account can receive inbound NIP transfers from any Nigerian bank.
+    - Real-time webhook notifications fire on every incoming credit.
+    - `GET /api/v1/collections/accounts/{accountNumber}/transactions`: query received payments with sender name, sender bank, and narration.
   </Accordion>
 
   <Accordion title="Webhooks">
     Event-driven notifications for asynchronous operations.
 
-    - `POST /api/v1/webhooks`: register a webhook endpoint URL for your partner account.
-    - `GET /api/v1/webhooks`: list all registered webhook endpoints.
-    - `DELETE /api/v1/webhooks/{webhookId}`: remove a webhook endpoint.
-    - `GET /api/v1/webhooks/deliveries`: view delivery history including HTTP status codes, response times, and retry attempts.
+    - `POST /api/v1/collections/webhooks`: register a webhook endpoint URL for your partner account.
+    - `GET /api/v1/collections/webhooks`: list all registered webhook endpoints.
+    - `DELETE /api/v1/collections/webhooks/{webhookId}`: remove a webhook endpoint.
+    - `GET /api/v1/collections/webhooks/deliveries`: delivery history with HTTP status codes, response times, and retry attempts.
     - Automatic retry with exponential backoff: failed deliveries are retried up to 5 times over 24 hours.
-    - HMAC-SHA256 signatures on every delivery: verify the `X-UBN-Signature` header to confirm authenticity.
+    - Every delivery is signed with HMAC-SHA256 via the `X-UBN-Signature` header. Verify it to confirm authenticity.
 
-    **Events supported at launch:**
+    **Events at launch:**
 
     | Event | Trigger |
     |---|---|
     | `payment.transfer.success` | Outbound transfer completed |
     | `payment.transfer.failed` | Outbound transfer failed |
-    | `collection.received` | Inbound credit to a virtual account |
-    | `kyc.verification.completed` | KYC check returned a result |
+    | `collection.received` | Inbound credit landed in a virtual account |
+    | `kyc.verification.completed` | A KYC check returned a result |
     | `account.created` | New virtual account provisioned |
   </Accordion>
 
@@ -120,34 +111,32 @@ We follow semantic versioning:
     Full production-equivalent testing environment.
 
     - Sandbox base URL: `https://api-partner.onecluster.co`
-    - Pre-configured test data for BVN, NIN, CAC, and account number verification.
-    - `GET /dev/outbox-preview`, inspect the last 50 emails and SMS messages that would have been sent in production.
-    - Identical rate limits to production, backoff logic tested in sandbox works correctly in production.
-    - Instant transfer settlement, no need to wait for batch windows during development.
+    - Pre-configured test data for BVN, NIN, CAC, and account-number verification.
+    - Same rate limits as production; backoff logic that works in sandbox works in production.
+    - Instant transfer settlement. You don't wait for batch windows when developing.
   </Accordion>
 </AccordionGroup>
 
-### Security
+### Security at launch
 
-The following security controls are active at launch across all environments:
+The following controls are active in every environment from day one:
 
 | Control | Detail |
 |---|---|
-| API key hashing | Argon2id, raw keys are never stored |
-| Document encryption at rest | AES-256 for all uploaded KYB documents |
-| Encryption in transit | TLS 1.3 on all API endpoints |
-| Mutual TLS (mTLS) | Required for production payment and KYC calls |
-| Request signing | HMAC-SHA256 for all payment and KYC requests |
-| Environment isolation | Sandbox and production share no data or infrastructure |
-| WORM audit logging | Immutable record of every API call and data access event |
-| Circuit breaker protection | Automatic failure isolation for upstream payment network dependencies |
-| SAST/DAST scanning | Run on every code change before deployment |
+| API key hashing | Argon2id. Raw keys are never stored. |
+| Document encryption at rest | AES-256 on all uploaded KYB documents. |
+| Encryption in transit | TLS 1.3 on every API endpoint. |
+| Mutual TLS (mTLS) | Required for production payment and KYC calls. |
+| Request signing | HMAC-SHA256 on every payment and KYC request. |
+| Environment isolation | Sandbox and production share no data and no infrastructure. |
+| WORM audit logging | Immutable record of every API call and data-access event. |
+| Circuit-breaker protection | Automatic failure isolation for upstream payment-network dependencies. |
 
-### Standards and Compliance
+### Standards and compliance
 
 | Standard | Status |
 |---|---|
-| OpenAPI 3.1.0 specification | Full spec published at `/api-reference/openapi.yaml` |
-| RFC 7807 Problem Details | All error responses use the standard `type`, `title`, `status`, `detail` format |
-| NDPR compliance | PII minimisation, consent capture, immutable audit trail |
-| CBN KYC guidelines | BVN/NIN verification aligned to current CBN KYC circular |
+| OpenAPI 3.1.0 specification | Full spec published at `/api-reference/openapi.yaml`. |
+| RFC 7807 Problem Details | Every error response uses the standard `type`, `title`, `status`, `detail` shape. |
+| NDPR compliance | PII minimisation, consent capture, immutable audit trail. |
+| CBN KYC guidelines | BVN / NIN verification aligned to the current CBN KYC circular. |
