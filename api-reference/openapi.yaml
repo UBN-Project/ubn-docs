@@ -66,9 +66,9 @@ info:
 
 servers:
   - url: https://api-partner.onecluster.co
-    description: Sandbox: Use this for testing. No real money moves.
+    description: "Sandbox - use this for testing. No real money moves."
   - url: https://api.onecluster.co
-    description: Production: Live environment. Real transactions.
+    description: "Production - live environment. Real transactions."
 
 security:
   - ApiKeyAuth: []
