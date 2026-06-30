@@ -19,7 +19,7 @@
   "topbarLinks": [
     {
       "name": "Status",
-      "url": "https://api.onecluster.co/api/v1/status"
+      "url": "https://api-partner.onecluster.co/api/v1/status"
     },
     {
       "name": "Support",
@@ -28,7 +28,7 @@
   ],
   "topbarCtaButton": {
     "name": "Get Started Free",
-    "url": "https://dev-ubn-ui.onecluster.co/auth/signup"
+    "url": "https://ubn-ui.onecluster.co/auth/signup"
   },
   "tabs": [
     {
@@ -44,7 +44,7 @@
     {
       "name": "Sandbox Portal",
       "icon": "flask",
-      "url": "https://dev-ubn-ui.onecluster.co"
+      "url": "https://ubn-ui.onecluster.co"
     },
     {
       "name": "GitHub",
@@ -103,30 +103,6 @@
       "pages": [
         "api-reference/endpoints/get-health",
         "api-reference/endpoints/get-status"
-      ]
-    },
-    {
-      "group": "Onboarding Endpoints",
-      "pages": [
-        "api-reference/onboarding",
-        "api-reference/endpoints/register",
-        "api-reference/endpoints/verify-email"
-      ]
-    },
-    {
-      "group": "API Keys",
-      "pages": [
-        "api-reference/endpoints/list-api-keys",
-        "api-reference/endpoints/generate-api-key",
-        "api-reference/endpoints/rotate-api-key",
-        "api-reference/endpoints/revoke-api-key"
-      ]
-    },
-    {
-      "group": "Production Access",
-      "pages": [
-        "api-reference/endpoints/request-production-access",
-        "api-reference/endpoints/get-production-access-status"
       ]
     },
     {
@@ -195,7 +171,7 @@
     }
   ],
   "api": {
-    "baseUrl": ["https://dev-api.onecluster.co", "https://api.onecluster.co"],
+    "baseUrl": "https://api-partner.onecluster.co",
     "auth": {
       "method": "key",
       "name": "Authorization",

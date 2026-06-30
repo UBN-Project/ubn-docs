@@ -5,7 +5,7 @@ description: "Open Nigerian bank accounts programmatically for your customers"
 
 ## What is a Virtual Account?
 
-A virtual account is a **real Nigerian bank account number** — it can receive transfers from any bank in Nigeria — but it lives inside your master Union Bank account.
+A virtual account is a **real Nigerian bank account number**. It can receive transfers from any bank in Nigeria, but it lives inside your master Union Bank account.
 
 Think of it like suites in a hotel: each suite has its own room number (the account number your customer sees), but they all share the same hotel address (your master Union Bank account). When a guest pays the hotel, the front desk knows exactly which suite the payment is for.
 
@@ -23,12 +23,12 @@ That front desk is your webhook. When money arrives in any virtual account, we n
   <Card title="Static Account" icon="user">
     **Permanent.** The account number never expires and is always assigned to the same customer or purpose.
 
-    **Best for:** Wallet top-ups, recurring billing, dedicated customer accounts. When your customer wants to fund their wallet, they always transfer to the same number — no need to generate a new one each time.
+    **Best for:** Wallet top-ups, recurring billing, dedicated customer accounts. When your customer wants to fund their wallet, they always transfer to the same number. No need to generate a new one each time.
   </Card>
   <Card title="Dynamic Account" icon="clock">
     **Temporary.** The account number expires after a time you set (e.g. 2 hours, 24 hours).
 
-    **Best for:** One-time payment links, invoice payments, event ticket orders. Generate the account, share it with your customer, and it disappears once expired — clean and secure.
+    **Best for:** One-time payment links, invoice payments, event ticket orders. Generate the account, share it with your customer, and it disappears once expired. Clean and secure.
   </Card>
 </CardGroup>
 
@@ -37,18 +37,18 @@ That front desk is your webhook. When money arrives in any virtual account, we n
 ## Create a Virtual Account
 
 Before you start, you need:
-- Your `partnerId` — visible in the sandbox dashboard
-- An API key — see the [API Keys guide](/onboarding/api-keys)
-- An idempotency key — a random unique string you generate for each request (see note below)
+- Your `partnerId` (visible in the sandbox dashboard)
+- An API key (you'll get this when your sandbox account is provisioned)
+- An idempotency key: a random unique string you generate for each request (see note below)
 
 <Note>
-  **What is an idempotency key?** It is a unique ID you attach to every create request. If your network drops after you send the request but before you receive a response, you can safely resend the same request with the same idempotency key. We will return the original result instead of creating a duplicate account. Use a UUID — most languages and operating systems have a built-in generator.
+  **What is an idempotency key?** It's a unique ID you attach to every create request. If your network drops after you send the request but before you receive a response, you can safely resend the same request with the same idempotency key. We'll return the original result instead of creating a duplicate account. Use a UUID. Most languages and operating systems have a built-in generator.
 </Note>
 
 <Tabs>
   <Tab title="cURL">
     ```bash
-    curl -X POST https://dev-api.onecluster.co/api/v1/accounts \
+    curl -X POST https://api-partner.onecluster.co/api/v1/accounts \
       -H "Authorization: ApiKey ubn_sb_your_key_here" \
       -H "Content-Type: application/json" \
       -H "X-Idempotency-Key: $(uuidgen)" \
@@ -62,7 +62,7 @@ Before you start, you need:
     ```javascript
     const { randomUUID } = require('crypto');
 
-    const response = await fetch('https://dev-api.onecluster.co/api/v1/accounts', {
+    const response = await fetch('https://api-partner.onecluster.co/api/v1/accounts', {
       method: 'POST',
       headers: {
         'Authorization': 'ApiKey ubn_sb_your_key_here',
@@ -85,7 +85,7 @@ Before you start, you need:
     import requests
 
     response = requests.post(
-        'https://dev-api.onecluster.co/api/v1/accounts',
+        'https://api-partner.onecluster.co/api/v1/accounts',
         headers={
             'Authorization': 'ApiKey ubn_sb_your_key_here',
             'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ Before you start, you need:
 To create a temporary account, set `accountType` to `DYNAMIC` and pass an `expiresAt` timestamp in ISO 8601 format:
 
 ```bash
-curl -X POST https://dev-api.onecluster.co/api/v1/accounts \
+curl -X POST https://api-partner.onecluster.co/api/v1/accounts \
   -H "Authorization: ApiKey ubn_sb_your_key_here" \
   -H "Content-Type: application/json" \
   -H "X-Idempotency-Key: $(uuidgen)" \
@@ -147,7 +147,7 @@ curl -X POST https://dev-api.onecluster.co/api/v1/accounts \
 ## Check Account Balance
 
 ```bash
-curl -X GET https://dev-api.onecluster.co/api/v1/accounts/9023456789/balance \
+curl -X GET https://api-partner.onecluster.co/api/v1/accounts/9023456789/balance \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 
@@ -174,7 +174,7 @@ curl -X GET https://dev-api.onecluster.co/api/v1/accounts/9023456789/balance \
 Pull a list of transactions for a virtual account within a date range. Dates follow the `YYYY-MM-DD` format.
 
 ```bash
-curl -X GET "https://dev-api.onecluster.co/api/v1/accounts/9023456789/statement?from=2026-03-01&to=2026-03-25&page=1&limit=20" \
+curl -X GET "https://api-partner.onecluster.co/api/v1/accounts/9023456789/statement?from=2026-03-01&to=2026-03-25&page=1&limit=20" \
   -H "Authorization: ApiKey ubn_sb_your_key_here"
 ```
 
@@ -211,14 +211,14 @@ curl -X GET "https://dev-api.onecluster.co/api/v1/accounts/9023456789/statement?
 
 ## Receiving Money
 
-When anyone does a bank transfer to a virtual account number — from any Nigerian bank, including mobile apps like GTBank, Access, or First Bank — the money lands in your master Union Bank account. You do not need to do anything to "pull" it in.
+When anyone does a bank transfer to a virtual account number from any Nigerian bank (including mobile apps like GTBank, Access, or First Bank), the money lands in your master Union Bank account. You don't need to do anything to "pull" it in.
 
-To be notified the moment a payment arrives, configure a webhook. We will send an HTTP POST to your server with full details of the transaction, including the sender's name and account number.
+To be notified the moment a payment arrives, configure a webhook. We'll send an HTTP POST to your server with full details of the transaction, including the sender's name and account number.
 
 See the [Webhooks guide](/products/webhooks) to set this up.
 
 <Warning>
-  Do not rely on polling the balance to detect incoming payments. Webhooks are faster, more reliable, and do not count against your rate limit quota. Use webhooks for anything customer-facing.
+  Don't poll the balance to detect incoming payments. Webhooks are faster, more reliable, and don't count against your rate limit quota. Use webhooks for anything customer-facing.
 </Warning>
 
 ---
@@ -250,10 +250,10 @@ See the [Webhooks guide](/products/webhooks) to set this up.
     Yes. Your customers will see Union Bank of Nigeria as the receiving bank in their banking app or USSD confirmation screen. The account name will appear as set during account creation (typically your business name or a customer-specific label).
   </Accordion>
   <Accordion title="What happens when a dynamic account expires?">
-    Any transfer sent to an expired dynamic account number is **rejected at the network level** and returned to the sender's bank. No money reaches your master account. This usually takes 1–3 business days to reverse to the sender, depending on the sending bank.
+    Any transfer sent to an expired dynamic account number is **rejected at the network level** and returned to the sender's bank. No money reaches your master account. The reversal typically takes 1 to 3 business days, depending on the sending bank.
   </Accordion>
   <Accordion title="Can I assign the same virtual account to multiple customers?">
-    No. Each virtual account should be assigned to exactly one customer or one purpose. If two customers share an account number, you cannot tell who made a given payment. The whole point of virtual accounts is pre-sorted, attributable payments.
+    No. Assign each virtual account to exactly one customer or one purpose. If two customers share an account number, you can't tell who made a given payment. The whole point of virtual accounts is pre-sorted, attributable payments.
   </Accordion>
   <Accordion title="Can I close or deactivate a virtual account?">
     Yes. Send a `DELETE` request to `/api/v1/accounts/{accountNumber}`. Static accounts can be deactivated at any time. Once deactivated, any inbound transfers are rejected and returned to the sender.

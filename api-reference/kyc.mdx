@@ -23,7 +23,7 @@ The Union Bank BaaS KYC API connects to Nigeria's official identity databases so
 
 | Environment | Base URL |
 |-------------|----------|
-| Sandbox | `https://dev-api.onecluster.co` |
+| Sandbox | `https://api-partner.onecluster.co` |
 | Production | `https://api.onecluster.co` |
 
 ---
@@ -36,7 +36,7 @@ All KYC endpoints require an API key:
 Authorization: ApiKey <your-api-key>
 ```
 
-Production KYC requests must also be **HMAC-signed** to prevent tampering. See the [Payments API](/api-reference/payments#request-signing-production) for the signing pattern — the same approach applies here.
+Production KYC requests must also be **HMAC-signed** to prevent tampering. See the [Payments API](/api-reference/payments#request-signing-production) for the signing pattern. The same approach applies here.
 
 ---
 
@@ -48,7 +48,7 @@ KYC results contain sensitive personal data. By using the KYC API, you agree to:
 - Not share customer identity data with third parties without explicit consent.
 - Comply with the [NDPR (Nigeria Data Protection Regulation)](/security/ndpr-compliance).
 
-KYC results are **not stored** by the platform — only the fact that a check was performed, its outcome, and the timestamp are retained for audit purposes.
+KYC results are **not stored** by the platform. Only the fact that a check was performed, its outcome, and the timestamp are retained for audit purposes.
 
 ---
 
@@ -65,7 +65,7 @@ Verify a customer's BVN and retrieve their registered details.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `bvn` | string | Yes | 11-digit Bank Verification Number |
-| `date_of_birth` | string | Yes | Customer's date of birth in `YYYY-MM-DD` format — used to confirm identity |
+| `date_of_birth` | string | Yes | Customer's date of birth in `YYYY-MM-DD` format, used to confirm identity |
 
 **What you get back:**
 
@@ -78,7 +78,7 @@ Verify a customer's BVN and retrieve their registered details.
 | `date_of_birth` | Registered date of birth |
 | `phone_number` | Phone number linked to the BVN (last 4 digits only for privacy) |
 | `gender` | Registered gender |
-| `verification_id` | Unique ID for this check — keep for your audit logs |
+| `verification_id` | Unique ID for this check. Keep it for your audit logs |
 | `checked_at` | ISO 8601 timestamp of the check |
 
 **Example request:**
@@ -187,9 +187,9 @@ Returns a paginated audit log of all KYC checks run by your business.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `type` | string | all | `bvn`, `nin`, or `cac` |
-| `from` | string | — | Start date `YYYY-MM-DD` |
-| `to` | string | — | End date `YYYY-MM-DD` |
-| `verified` | boolean | — | Filter by `true` (passed) or `false` (failed) |
+| `from` | string | none | Start date `YYYY-MM-DD` |
+| `to` | string | none | End date `YYYY-MM-DD` |
+| `verified` | boolean | none | Filter by `true` (passed) or `false` (failed) |
 | `page` | integer | `1` | Page number |
 | `per_page` | integer | `20` | Max 100 |
 
@@ -203,10 +203,10 @@ In the sandbox environment, use these test values to simulate different outcomes
 
 | BVN | DOB | Result |
 |-----|-----|--------|
-| `12345678901` | `1990-05-20` | Verified — returns Amina Bello |
-| `11111111111` | `1985-01-01` | Verified — returns Chidi Okonkwo |
-| `99999999999` | any | Not found — returns `verified: false` |
-| `00000000000` | any | Error — simulates upstream timeout |
+| `12345678901` | `1990-05-20` | Verified, returns Amina Bello |
+| `11111111111` | `1985-01-01` | Verified, returns Chidi Okonkwo |
+| `99999999999` | any | Not found, returns `verified: false` |
+| `00000000000` | any | Error, simulates upstream timeout |
 
 **NIN test values:**
 
@@ -234,7 +234,7 @@ Each KYC check is billed per call. Charges are deducted from your platform walle
 | NIN | ₦20 per call |
 | CAC | ₦25 per call |
 
-Sandbox checks are free — charges only apply in production.
+Sandbox checks are free. Charges only apply in production.
 
 ---
 
@@ -247,7 +247,7 @@ Sandbox checks are free — charges only apply in production.
 | 404 | `IDENTITY_NOT_FOUND` | BVN/NIN/CAC number not found in the registry |
 | 422 | `DOB_MISMATCH` | Date of birth does not match the registered record |
 | 429 | `RATE_LIMIT_EXCEEDED` | Too many requests |
-| 503 | `NIMC_UNAVAILABLE` | Identity database temporarily unreachable — retry |
+| 503 | `NIMC_UNAVAILABLE` | Identity database temporarily unreachable. Retry |
 
 ---
 

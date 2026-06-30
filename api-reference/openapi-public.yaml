@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
-  title: Union Bank BaaS API — Public Endpoints
+  title: Union Bank BaaS API, Public Endpoints
   version: "1.0"
   description: Public endpoints that do not require authentication.
 
 servers:
-  - url: https://dev-api.onecluster.co
+  - url: https://api-partner.onecluster.co
     description: Sandbox
   - url: https://api.onecluster.co
     description: Production

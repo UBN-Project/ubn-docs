@@ -3,7 +3,7 @@ title: "Security Overview"
 description: "How we protect your data and how you protect your integration"
 ---
 
-Security is a shared responsibility. We handle the infrastructure side — encryption, audit logs, key management, and isolation. You handle the application side — how you store credentials, verify webhooks, and protect your own endpoints. This page covers both.
+Security is a shared responsibility. We handle the infrastructure side: encryption, audit logs, key management, and isolation. You handle the application side: how you store credentials, verify webhooks, and protect your own endpoints. This page covers both.
 
 ## How We Protect You
 
@@ -13,18 +13,18 @@ When you generate an API key, we immediately run it through a one-way mathematic
 
 This means:
 - We cannot look up or recover your raw API key after generation.
-- Even if our database were ever compromised, the attacker would get fingerprints — not usable keys.
+- Even if our database were ever compromised, the attacker would get fingerprints. They would not get usable keys.
 - You must copy your key at the moment of generation. We cannot show it again.
 
 ### Encryption in Transit (TLS 1.3)
 
-Every request between your application and our API travels over **TLS 1.3**, the latest and most secure version of the Transport Layer Security protocol. TLS encrypts the connection so that anyone observing network traffic between you and us cannot read the data.
+Every request between your application and our API travels over **TLS 1.3**: the latest and most secure version of the Transport Layer Security protocol. TLS encrypts the connection so that anyone observing network traffic between you and us cannot read the data.
 
-Plain HTTP connections are rejected. If you accidentally make a request over `http://`, you will receive a connection error — not a silent fallback to an unencrypted channel.
+Plain HTTP connections are rejected. If you accidentally make a request over `http://`, you'll receive a connection error: never a silent fallback to an unencrypted channel.
 
 ### Encryption at Rest (AES-256)
 
-Documents you upload during KYB — Certificates of Incorporation, Director IDs, Utility Bills — are encrypted on our storage infrastructure using **AES-256**. This is the same encryption standard used by major banks, healthcare providers, and government agencies globally. A stored file cannot be read without the decryption key, which is managed separately from the data.
+Documents you upload during KYB (Certificates of Incorporation, Director IDs, Utility Bills) are encrypted on our storage infrastructure using **AES-256**. This is the same encryption standard used by major banks, healthcare providers, and government agencies globally. A stored file cannot be read without the decryption key, which is managed separately from the data.
 
 ### Environment Isolation
 
@@ -36,7 +36,7 @@ Our APIs are protected by a **circuit breaker** pattern. If an upstream dependen
 
 ### WORM Audit Logs
 
-Every action taken on the platform — every API call, every key rotation, every document upload, every payment — is recorded in **WORM logs** (Write Once, Read Many). Once written, these logs cannot be modified or deleted, even by our own administrators. This is a regulatory requirement and also your protection: if a dispute arises, the log is an authoritative and tamper-proof record.
+Every action taken on the platform (every API call, every key rotation, every document upload, every payment) is recorded in **WORM logs** (Write Once, Read Many). Once written, these logs cannot be modified or deleted, even by our own administrators. This is a regulatory requirement and also your protection: if a dispute arises, the log is an authoritative and tamper-proof record.
 
 ### Continuous Security Scanning
 
@@ -51,7 +51,7 @@ A deployment that fails a security scan does not go to production.
 
 ## How You Protect Your Integration
 
-You own your API keys and your application. The following practices are not optional niceties — they are the minimum baseline for a secure integration.
+You own your API keys and your application. The following practices are not optional niceties. They are the minimum baseline for a secure integration.
 
 ### Store Keys in Environment Variables
 
@@ -60,10 +60,10 @@ Never write an API key directly into your source code. Instead, read it from an 
 <Tabs>
   <Tab title="Node.js">
     ```javascript
-    // Good — key comes from the environment
+    // Good, key comes from the environment
     const apiKey = process.env.UBN_API_KEY;
 
-    // Bad — key is hardcoded in source
+    // Bad, key is hardcoded in source
     const apiKey = "sk_live_abc123xyz"; // NEVER do this
     ```
   </Tab>
@@ -71,16 +71,16 @@ Never write an API key directly into your source code. Instead, read it from an 
     ```python
     import os
 
-    # Good — key comes from the environment
+    # Good, key comes from the environment
     api_key = os.environ.get("UBN_API_KEY")
 
-    # Bad — key is hardcoded in source
+    # Bad, key is hardcoded in source
     api_key = "sk_live_abc123xyz"  # NEVER do this
     ```
   </Tab>
   <Tab title=".env file">
     ```bash
-    # .env file — never commit this file to git
+    # .env file, never commit this file to git
     UBN_API_KEY=sk_live_abc123xyz
     UBN_SIGNING_SECRET=whsec_abc123xyz
     UBN_PARTNER_ID=PRT-0001
@@ -89,7 +89,7 @@ Never write an API key directly into your source code. Instead, read it from an 
 </Tabs>
 
 <Warning>
-  If a key is committed to a git repository — even in a private repo, even for one second — treat it as compromised. Rotate it immediately. Git history is permanent and can be forked, cloned, or leaked.
+  If a key is committed to a git repository, even in a private repo, even for one second, treat it as compromised. Rotate it immediately. Git history is permanent and can be forked, cloned, or leaked.
 </Warning>
 
 ### Keep Keys Out of Git
@@ -128,7 +128,7 @@ To rotate a key:
 
 ### Revoke Immediately on Suspected Leak
 
-If you suspect a key has been exposed — it appeared in a log, a colleague shared it over chat, it was committed to git — revoke it in the portal immediately. Do not wait to investigate first. Revoke first, investigate second.
+If you suspect a key has been exposed (it appeared in a log, a colleague shared it over chat, it was committed to git), revoke it in the portal immediately. Do not wait to investigate first. Revoke first, investigate second.
 
 ### Verify Webhook Signatures
 
@@ -210,12 +210,12 @@ Every webhook notification we send includes an `X-UBN-Signature` header. This is
 </Tabs>
 
 <Warning>
-  Never skip signature verification in production. An endpoint that accepts unverified webhook payloads can be spoofed — an attacker could send fake payment notifications to your system.
+  Never skip signature verification in production. An endpoint that accepts unverified webhook payloads can be spoofed: an attacker could send fake payment notifications to your system.
 </Warning>
 
 ### Use HTTPS for Webhook Endpoints
 
-Your webhook endpoint URL must use `https://`. We will reject webhook registration for plain `http://` URLs. An unencrypted webhook endpoint exposes event payloads — including payment notifications — to anyone who can observe the network traffic.
+Your webhook endpoint URL must use `https://`. We will reject webhook registration for plain `http://` URLs. An unencrypted webhook endpoint exposes event payloads, including payment notifications, to anyone who can observe the network traffic.
 
 ### Rate Limit Your Own Endpoints
 
@@ -223,7 +223,7 @@ If your application exposes APIs to your own users, apply rate limiting to them.
 
 ### Keep Your IP Allowlist Current
 
-If you registered IP addresses during go-live, keep that list up to date. When you change servers, add the new IP before removing the old one. Letting your allowlist get stale — especially after a cloud migration or infrastructure change — is a common cause of sudden authentication failures.
+If you registered IP addresses during go-live, keep that list up to date. When you change servers, add the new IP before removing the old one. A stale allowlist (especially after a cloud migration or infrastructure change) is a common cause of sudden authentication failures.
 
 ---
 
@@ -243,7 +243,7 @@ Run through this checklist before you go live. Every item is a real-world risk, 
     <Check>Webhook signature verification is implemented and tested</Check>
     <Check>All webhook endpoints are served over HTTPS</Check>
     <Check>Webhook handler returns `200 OK` before doing heavy processing (prevents timeouts)</Check>
-    <Check>Idempotency is implemented — duplicate webhook deliveries do not create duplicate records</Check>
+    <Check>Idempotency is implemented; duplicate webhook deliveries do not create duplicate records</Check>
   </Accordion>
   <Accordion title="Payment Safety">
     <Check>Idempotency keys are sent with every payment request</Check>

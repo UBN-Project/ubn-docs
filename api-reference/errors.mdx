@@ -3,12 +3,12 @@ title: "Error Reference"
 description: "Every error code, what it means, and how to fix it"
 ---
 
-All errors from the UBN BaaS API follow the [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807) standard — a consistent format used across every endpoint. Every error includes a human-readable explanation you can read while debugging, and a machine-readable `code` field your application can branch on.
+All errors from the UBN BaaS API follow the [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807) standard: a consistent format used across every endpoint. Every error includes a human-readable explanation you can read while debugging, and a machine-readable `code` field your application can branch on.
 
 For the full shape of an error response, see [Error Response Format](/api-reference/overview#error-response-format-rfc-7807) in the API overview.
 
 <Info>
-  Always log the `correlationId` from every error response. When you contact support, including the `correlationId` is the single fastest way to find your request in our systems — it can cut investigation time from hours to minutes.
+  Always log the `correlationId` from every error response. When you contact support, including the `correlationId` is the single fastest way to find your request in our systems. It can cut investigation time from hours to minutes.
 </Info>
 
 ---
@@ -23,11 +23,11 @@ The HTTP status code gives you the first, broad signal about what went wrong. Re
     |--------|---------|
     | `200 OK` | The request succeeded and a response body is returned. Used for GET requests and most updates. |
     | `201 Created` | A new resource was created. For example: a new virtual account, a new API key. The created resource is returned in the `data` field. |
-    | `202 Accepted` | The request was accepted but processing happens asynchronously. The operation is in progress — subscribe to the relevant webhook event to know when it completes. Used for payments and KYB review. |
+    | `202 Accepted` | The request was accepted but processing happens asynchronously. The operation is in progress. Subscribe to the relevant webhook event to know when it completes. Used for payments and KYB review. |
     | `204 No Content` | The request succeeded but there is nothing to return. Used for DELETE operations such as removing a webhook endpoint. |
   </Tab>
   <Tab title="4xx Client Errors">
-    These errors mean something about your request is wrong. You need to fix your request — retrying without a change will not help.
+    These errors mean something about your request is wrong. You need to fix your request. Retrying without a change will not help.
 
     | Status | Meaning |
     |--------|---------|
@@ -43,7 +43,7 @@ The HTTP status code gives you the first, broad signal about what went wrong. Re
     | `429 Too Many Requests` | You are sending requests faster than your rate limit allows. Check the `Retry-After` header and wait that many seconds before retrying. See [Rate Limits](/security/rate-limits). |
   </Tab>
   <Tab title="5xx Server Errors">
-    These errors originate on our side. You do not need to change your request — but you should retry with backoff.
+    These errors originate on our side. You do not need to change your request, but you should retry with backoff.
 
     | Status | Meaning |
     |--------|---------|
@@ -58,7 +58,7 @@ The HTTP status code gives you the first, broad signal about what went wrong. Re
 Use the `code` field in the error response body to handle specific errors programmatically. The table below covers every code the API can return, what it means, and the exact fix.
 
 <Note>
-  Error codes are stable — we will not rename or remove a code without a deprecation period. You can safely use them in `switch` statements and conditional logic.
+  Error codes are stable. We will not rename or remove a code without a deprecation period. You can safely use them in `switch` statements and conditional logic.
 </Note>
 
 ### Onboarding and Identity
@@ -76,7 +76,7 @@ Use the `code` field in the error response body to handle specific errors progra
 
 | Code | HTTP Status | What happened | How to fix |
 |------|-------------|---------------|------------|
-| `ENVIRONMENT_MISMATCH` | 403 | You used a sandbox key (`ubn_sb_`) against the production URL, or a production key (`ubn_pk_`) against the sandbox URL. | Check your base URL and key prefix. Sandbox keys must only be used with `https://dev-api.onecluster.co`. Production keys must only be used with `https://api.onecluster.co`. |
+| `ENVIRONMENT_MISMATCH` | 403 | You used a sandbox key (`ubn_sb_`) against the production URL, or a production key (`ubn_pk_`) against the sandbox URL. | Check your base URL and key prefix. Sandbox keys must only be used with `https://api-partner.onecluster.co`. Production keys must only be used with `https://api.onecluster.co`. |
 | `INVALID_SIGNATURE` | 401 | The HMAC-SHA256 signature in the `X-Signature` header does not match what we computed from your request body. | Re-read the [Signing Requests](/api-reference/authentication#signing-requests) guide. Most common causes: using the API key instead of the signing secret, or your HTTP client re-serialising the JSON after you signed it. |
 
 ### Payments and Accounts
@@ -84,7 +84,7 @@ Use the `code` field in the error response body to handle specific errors progra
 | Code | HTTP Status | What happened | How to fix |
 |------|-------------|---------------|------------|
 | `INSUFFICIENT_FUNDS` | 422 | The source account does not have enough balance to cover the transfer amount plus any applicable fees. | Top up the source account, or reduce the transfer amount. The `detail` field in the error includes the current balance and the minimum required amount. |
-| `ACCOUNT_NOT_FOUND` | 404 | The account number you specified does not exist in the system. | Double-check the account number — a transposed digit is a common cause. If you are referencing a recently created account, wait a few seconds and retry (account creation is near-instant but not instantaneous). |
+| `ACCOUNT_NOT_FOUND` | 404 | The account number you specified does not exist in the system. | Double-check the account number. A transposed digit is a common cause. If you are referencing a recently created account, wait a few seconds and retry (account creation is near-instant but not instantaneous). |
 
 ### Billing and Wallet
 
@@ -99,14 +99,14 @@ Use the `code` field in the error response body to handle specific errors progra
 | Code | HTTP Status | What happened | How to fix |
 |------|-------------|---------------|------------|
 | `QUOTA_EXHAUSTED` | 402 | Your plan's API call quota for this billing period has been fully used. | Check the `X-Quota-Reset` header to find the Unix timestamp when your quota resets. If you need more calls sooner, contact your UBN account manager to upgrade your plan. |
-| `RATE_LIMITED` | 429 | You are sending too many requests too quickly. | Wait for the number of seconds specified in the `Retry-After` response header before sending another request. Implement exponential backoff for automated retries — see [Retry Strategy](#retry-strategy) below. |
+| `RATE_LIMITED` | 429 | You are sending too many requests too quickly. | Wait for the number of seconds specified in the `Retry-After` response header before sending another request. Implement exponential backoff for automated retries. See [Retry Strategy](#retry-strategy) below. |
 
 ### Infrastructure and Idempotency
 
 | Code | HTTP Status | What happened | How to fix |
 |------|-------------|---------------|------------|
 | `CIRCUIT_BREAKER_OPEN` | 503 | A downstream service (such as the NIP payment network or an identity bureau) is temporarily unavailable. The circuit breaker has opened to prevent cascading failures. | This is temporary. Wait 30 seconds, then retry. The `X-Circuit-Breaker-Open: true` response header will be absent once the circuit closes. |
-| `IDEMPOTENCY_REPLAY` | 409 | You sent a request with an `X-Idempotency-Key` that was already used for a previous successful request. | This is not always an error — it means your original request succeeded. The response body contains the original result. Check the `X-Idempotency-Replayed: true` response header to confirm it is a replay. See [Idempotency Keys](/api-reference/authentication#idempotency-keys). |
+| `IDEMPOTENCY_REPLAY` | 409 | You sent a request with an `X-Idempotency-Key` that was already used for a previous successful request. | This is not always an error. It means your original request succeeded; the response body contains the original result. Check the `X-Idempotency-Replayed: true` response header to confirm it is a replay. See [Idempotency Keys](/api-reference/authentication#idempotency-keys). |
 
 ---
 
@@ -126,7 +126,7 @@ async function fetchWithRetry(url, options, maxRetries = 4) {
     const response = await fetch(url, options);
 
     if (!retryableStatuses.has(response.status)) {
-      // Success, or a non-retryable error — return immediately
+      // Success, or a non-retryable error, return immediately
       return response;
     }
 
@@ -152,7 +152,7 @@ async function fetchWithRetry(url, options, maxRetries = 4) {
 
 // Usage
 const response = await fetchWithRetry(
-  'https://dev-api.onecluster.co/api/v1/accounts',
+  'https://api-partner.onecluster.co/api/v1/accounts',
   {
     headers: {
       'Authorization': `ApiKey ${process.env.UBN_API_KEY}`,
@@ -174,7 +174,7 @@ def fetch_with_retry(url: str, method: str = 'GET', max_retries: int = 4, **kwar
         response = requests.request(method, url, **kwargs)
 
         if response.status_code not in retryable_statuses:
-            # Success, or a non-retryable error — return immediately
+            # Success, or a non-retryable error, return immediately
             return response
 
         if attempt == max_retries:
@@ -196,7 +196,7 @@ def fetch_with_retry(url: str, method: str = 'GET', max_retries: int = 4, **kwar
 
 # Usage
 response = fetch_with_retry(
-    'https://dev-api.onecluster.co/api/v1/accounts',
+    'https://api-partner.onecluster.co/api/v1/accounts',
     headers={
         'Authorization': f"ApiKey {os.environ['UBN_API_KEY']}",
         'Content-Type': 'application/json',
@@ -207,14 +207,14 @@ response = fetch_with_retry(
 </CodeGroup>
 
 <Tip>
-  For `429` errors, check the `Retry-After` response header first — it tells you the exact number of seconds to wait. Use that value instead of the exponential backoff if it is present, as it reflects the actual rate limit window rather than an estimate.
+  For `429` errors, check the `Retry-After` response header first. It tells you the exact number of seconds to wait. Use that value instead of the exponential backoff when present, as it reflects the actual rate limit window rather than an estimate.
 </Tip>
 
 ---
 
 ## Circuit Breaker
 
-The circuit breaker protects the platform when a downstream service (the NIP payment network, NIBSS, or an identity verification bureau) experiences degraded performance. When too many requests to a downstream service fail within a short window, the circuit breaker "opens" and all requests that would reach that service are rejected immediately — rather than queuing and timing out.
+The circuit breaker protects the platform when a downstream service (the NIP payment network, NIBSS, or an identity verification bureau) experiences degraded performance. When too many requests to a downstream service fail within a short window, the circuit breaker "opens" and all requests that would reach that service are rejected immediately, rather than queuing and timing out.
 
 This is a safety mechanism, not a sign that your integration is broken. When the circuit is open:
 
@@ -223,7 +223,7 @@ This is a safety mechanism, not a sign that your integration is broken. When the
 3. Wait **30 seconds** before retrying.
 4. The circuit closes automatically once the downstream service recovers.
 
-You can check real-time service status at [dev-api.onecluster.co/status](https://dev-api.onecluster.co/status).
+You can check real-time service status at [api-partner.onecluster.co/status](https://api-partner.onecluster.co/status).
 
 ---
 
@@ -237,5 +237,5 @@ If you cannot resolve an error using this reference, contact support at [baas-su
 - A sanitised version of your request (remove API keys, account numbers, and personal data before sharing)
 
 <Info>
-  The `correlationId` is the single most important piece of information you can provide. It points directly to your request in our logs, which allows us to see exactly what happened — including what we received, what was checked, and what failed — without needing to reproduce the issue.
+  The `correlationId` is the single most important piece of information you can provide. It points directly to your request in our logs, which lets us see exactly what happened: what we received, what was checked, and what failed, without needing to reproduce the issue.
 </Info>

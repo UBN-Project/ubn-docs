@@ -7,12 +7,12 @@ description: "Verify the identity of your customers using BVN, NIN, and CAC look
 
 KYC stands for **Know Your Customer**. Before you allow anyone to move money through your application, Nigerian law requires you to verify that they are who they claim to be.
 
-This is not just a technical requirement — it protects you, your customers, and the financial system from fraud, money laundering, and identity theft. The Central Bank of Nigeria (CBN) KYC regulations apply to every financial service that processes payments on behalf of customers.
+This isn't just a technical requirement. It protects you, your customers, and the financial system from fraud, money laundering, and identity theft. The Central Bank of Nigeria (CBN) KYC regulations apply to every financial service that processes payments on behalf of customers.
 
 We give you APIs to complete these checks instantly, without your customers having to visit a branch or scan physical documents.
 
 <Info>
-  KYC checks are required before you may credit or debit a customer's account for the first time. Build verification into your customer onboarding flow, not as an afterthought.
+  Run KYC before you credit or debit a customer's account for the first time. Build verification into your onboarding flow, not as an afterthought.
 </Info>
 
 ---
@@ -35,7 +35,7 @@ We give you APIs to complete these checks instantly, without your customers havi
 
 ## Privacy by Design
 
-We are deliberate about what data we return — and what we do not.
+We're deliberate about what data we return, and what we don't.
 
 **We never return:**
 - Full BVN or NIN digits
@@ -47,23 +47,23 @@ We are deliberate about what data we return — and what we do not.
 - A name match confidence score (0.0 to 1.0)
 - Basic demographic signals (e.g. whether the date of birth year matches)
 
-This approach is designed for **NDPR compliance** (Nigeria Data Protection Regulation). Full PII is never stored on our servers after the check completes. Your system receives only what is necessary to make a pass/fail decision.
+This approach is designed for **NDPR compliance** (Nigeria Data Protection Regulation). We never store full PII on our servers after the check completes. Your system receives only what's necessary to make a pass/fail decision.
 
 ---
 
 ## Understanding the Name Match Score
 
-Every BVN and NIN lookup returns a `nameMatchScore` — a number between 0 and 1.
+Every BVN and NIN lookup returns a `nameMatchScore`: a number between 0 and 1.
 
 | Score | Meaning |
 |---|---|
-| `0.95` – `1.00` | Very high confidence — names match closely |
-| `0.80` – `0.94` | Good match — minor variation (e.g. middle name omitted, shortened first name) |
-| `0.60` – `0.79` | Partial match — review manually before proceeding |
-| `0.00` – `0.59` | Low confidence — likely a mismatch, reject |
+| `0.95` to `1.00` | Very high confidence. Names match closely |
+| `0.80` to `0.94` | Good match. Minor variation (e.g. middle name omitted, shortened first name) |
+| `0.60` to `0.79` | Partial match. Review manually before proceeding |
+| `0.00` to `0.59` | Low confidence. Likely a mismatch. Reject |
 
 <Warning>
-  We recommend rejecting any verification with a `nameMatchScore` below `0.80`. You may want to allow customers with scores between 0.60 and 0.79 to submit a government-issued ID for manual review instead of outright rejection.
+  Reject any verification with a `nameMatchScore` below `0.80`. For scores between 0.60 and 0.79, ask the customer to submit a government-issued ID for manual review instead of outright rejecting them.
 </Warning>
 
 ---
@@ -75,7 +75,7 @@ Use BVN as your primary identity check for individual customers.
 <Tabs>
   <Tab title="cURL">
     ```bash
-    curl -X POST https://dev-api.onecluster.co/api/v1/kyc/bvn \
+    curl -X POST https://api-partner.onecluster.co/api/v1/kyc/bvn \
       -H "Authorization: ApiKey ubn_sb_your_key_here" \
       -H "Content-Type: application/json" \
       -d '{
@@ -88,7 +88,7 @@ Use BVN as your primary identity check for individual customers.
   </Tab>
   <Tab title="JavaScript (fetch)">
     ```javascript
-    const response = await fetch('https://dev-api.onecluster.co/api/v1/kyc/bvn', {
+    const response = await fetch('https://api-partner.onecluster.co/api/v1/kyc/bvn', {
       method: 'POST',
       headers: {
         'Authorization': 'ApiKey ubn_sb_your_key_here',
@@ -137,7 +137,7 @@ Use NIN as a **secondary check** alongside BVN, or as the primary check when BVN
 <Tabs>
   <Tab title="cURL">
     ```bash
-    curl -X POST https://dev-api.onecluster.co/api/v1/kyc/nin \
+    curl -X POST https://api-partner.onecluster.co/api/v1/kyc/nin \
       -H "Authorization: ApiKey ubn_sb_your_key_here" \
       -H "Content-Type: application/json" \
       -d '{
@@ -150,7 +150,7 @@ Use NIN as a **secondary check** alongside BVN, or as the primary check when BVN
   </Tab>
   <Tab title="JavaScript (fetch)">
     ```javascript
-    const response = await fetch('https://dev-api.onecluster.co/api/v1/kyc/nin', {
+    const response = await fetch('https://api-partner.onecluster.co/api/v1/kyc/nin', {
       method: 'POST',
       headers: {
         'Authorization': 'ApiKey ubn_sb_your_key_here',
@@ -193,7 +193,7 @@ When onboarding a business customer, use CAC lookup to confirm the company is re
 <Tabs>
   <Tab title="cURL">
     ```bash
-    curl -X POST https://dev-api.onecluster.co/api/v1/kyc/cac \
+    curl -X POST https://api-partner.onecluster.co/api/v1/kyc/cac \
       -H "Authorization: ApiKey ubn_sb_your_key_here" \
       -H "Content-Type: application/json" \
       -d '{
@@ -204,7 +204,7 @@ When onboarding a business customer, use CAC lookup to confirm the company is re
   </Tab>
   <Tab title="JavaScript (fetch)">
     ```javascript
-    const response = await fetch('https://dev-api.onecluster.co/api/v1/kyc/cac', {
+    const response = await fetch('https://api-partner.onecluster.co/api/v1/kyc/cac', {
       method: 'POST',
       headers: {
         'Authorization': 'ApiKey ubn_sb_your_key_here',
@@ -249,10 +249,10 @@ When onboarding a business customer, use CAC lookup to confirm the company is re
 | Individual with no BVN yet | NIN (primary) |
 | High-risk transaction above a threshold | BVN + NIN (both) |
 | Business / merchant onboarding | CAC lookup + director BVN |
-| Repeat customer with existing verification | Skip — store `verificationRef`, do not re-check |
+| Repeat customer with existing verification | Skip. Store `verificationRef`. Don't re-check |
 
 <Tip>
-  Store the `verificationRef` returned from each successful check. If a customer has already been verified, you do not need to call the API again. Re-checking costs you API quota and adds unnecessary latency to the customer experience.
+  Store the `verificationRef` returned from each successful check. If a customer has already been verified, you don't need to call the API again. Re-checking costs API quota and adds latency for the customer.
 </Tip>
 
 ---
@@ -260,25 +260,25 @@ When onboarding a business customer, use CAC lookup to confirm the company is re
 ## Handling Verification Results
 
 <AccordionGroup>
-  <Accordion title="Match (nameMatchScore ≥ 0.80)">
-    The identity check passed. Store the `verificationRef` against the customer record and proceed with onboarding. You do not need to store any PII from the check — the ref is your audit trail.
+  <Accordion title="Match (nameMatchScore >= 0.80)">
+    The identity check passed. Store the `verificationRef` against the customer record and proceed with onboarding. You don't need to store any PII from the check. The ref is your audit trail.
   </Accordion>
-  <Accordion title="Partial Match (nameMatchScore 0.60 – 0.79)">
+  <Accordion title="Partial Match (nameMatchScore 0.60 to 0.79)">
     The names are similar but not a strong match. Common causes: the customer's registered bank name uses a different format (e.g. initials instead of full name), or a middle name is included in one record but not the other.
 
-    **Recommended approach:** Do not auto-approve. Ask the customer to upload a government-issued ID for manual review, or ask them to confirm their name exactly as it appears on their BVN/NIN record.
+    **Recommended approach:** Don't auto-approve. Ask the customer to upload a government-issued ID for manual review, or ask them to confirm their name exactly as it appears on their BVN/NIN record.
   </Accordion>
   <Accordion title="No Match (nameMatchScore < 0.60)">
-    The names do not match. Either the wrong BVN/NIN was entered, or the customer's identity information does not match.
+    The names don't match. Either the wrong BVN/NIN was entered, or the customer's identity information doesn't match.
 
-    **Recommended approach:** Reject the verification attempt. Allow the customer to re-enter their BVN/NIN in case of a typo. Log the attempt for fraud monitoring purposes.
+    **Recommended approach:** Reject the verification attempt. Let the customer re-enter their BVN/NIN in case of a typo. Log the attempt for fraud monitoring.
   </Accordion>
   <Accordion title="Check Failed (API error)">
-    The verification service could not be reached, or the BVN/NIN was not found in the registry. This is different from a no-match — it means the check could not be completed.
+    The verification service couldn't be reached, or the BVN/NIN was not found in the registry. This is different from a no-match. It means the check couldn't be completed.
 
-    **Recommended approach:** Retry once after a short delay. If it fails again, surface a friendly error to the customer and allow them to try again later. Do not block the customer permanently for a transient API failure.
+    **Recommended approach:** Retry once after a short delay. If it fails again, surface a friendly error to the customer and let them try again later. Don't block the customer permanently for a transient API failure.
 
-    HTTP 422 means the BVN/NIN format is invalid (check the length and that it contains only digits). HTTP 404 means the BVN/NIN was not found in the registry.
+    HTTP 422 means the BVN/NIN format is invalid (check the length and that it contains only digits). HTTP 404 means the BVN/NIN wasn't found in the registry.
   </Accordion>
 </AccordionGroup>
 
@@ -295,5 +295,5 @@ When onboarding a business customer, use CAC lookup to confirm the company is re
 If you expect higher volumes (e.g. a large onboarding campaign), contact [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) in advance to have your limits reviewed.
 
 <Note>
-  Rate limits apply per API key, not per customer. If you are running a high-volume batch verification (e.g. verifying an existing customer base), spread requests over time or request a temporary limit increase.
+  Rate limits apply per API key, not per customer. If you're running a high-volume batch verification (e.g. verifying an existing customer base), spread requests over time or request a temporary limit increase.
 </Note>

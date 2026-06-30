@@ -5,7 +5,7 @@ description: "Accept incoming payments from customers. Generate payment links, t
 
 ## Overview
 
-The Collections API handles money coming **in** to your platform — the opposite of Payments, which handles money going out. When a customer wants to pay you, you use the Collections API to:
+The Collections API handles money coming **in** to your platform. It's the opposite of Payments, which handles money going out. When a customer wants to pay you, you use the Collections API to:
 
 1. Create a **collection reference** (a payment link or account number) for the customer.
 2. The customer sends money to that reference from any bank in Nigeria.
@@ -20,7 +20,7 @@ Collections work over the NIP network, so funds arrive in near real-time.
 
 | Environment | Base URL |
 |-------------|----------|
-| Sandbox | `https://dev-api.onecluster.co` |
+| Sandbox | `https://api-partner.onecluster.co` |
 | Production | `https://api.onecluster.co` |
 
 ---
@@ -66,7 +66,7 @@ Generate a unique payment reference for a customer to send you money. You can se
 | `destination_account_id` | string | Yes | The virtual account that should receive the funds |
 | `expected_amount` | integer | No | Expected amount in kobo. If set, only this exact amount is accepted |
 | `currency` | string | Yes | Always `NGN` |
-| `description` | string | No | What this payment is for — shown in the webhook and statement |
+| `description` | string | No | What this payment is for, shown in the webhook and statement |
 | `expires_at` | string | No | ISO 8601 datetime after which this intent expires. Default: never |
 | `customer_ref` | string | No | Your internal reference for the customer (e.g., order ID) |
 | `metadata` | object | No | Any key-value pairs for your own records |
@@ -81,7 +81,7 @@ Generate a unique payment reference for a customer to send you money. You can se
 | `destination_bank_name` | Always `Union Bank of Nigeria` |
 | `destination_bank_code` | Union Bank's CBN bank code |
 | `expected_amount` | Amount in kobo (if specified) |
-| `status` | `pending` — waiting for payment |
+| `status` | `pending`. Waiting for payment |
 | `expires_at` | Expiry datetime or `null` |
 
 **Example request:**
@@ -131,7 +131,7 @@ Check whether a payment has been received for a specific collection intent.
 |--------|---------|
 | `pending` | Awaiting payment from customer |
 | `partially_paid` | Customer sent less than the expected amount |
-| `paid` | Full payment received — virtual account credited |
+| `paid` | Full payment received, virtual account credited |
 | `overpaid` | Customer sent more than expected |
 | `expired` | Intent expired before payment arrived |
 | `cancelled` | Manually cancelled via the API |
@@ -160,9 +160,9 @@ Returns all collection intents for your business, with filtering options.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `status` | string | all | Filter by status |
-| `destination_account_id` | string | — | Return only collections for this account |
-| `from` | string | — | Start date `YYYY-MM-DD` |
-| `to` | string | — | End date `YYYY-MM-DD` |
+| `destination_account_id` | string | none | Return only collections for this account |
+| `from` | string | none | Start date `YYYY-MM-DD` |
+| `to` | string | none | End date `YYYY-MM-DD` |
 | `page` | integer | `1` | Page number |
 | `per_page` | integer | `20` | Max 100 |
 
@@ -214,7 +214,7 @@ In the sandbox environment, incoming payments do not arrive automatically. Use t
 | `sender_name` | string | No | Name of the simulated sender |
 | `sender_account` | string | No | Simulated sender account number |
 
-This triggers the full webhook flow as if a real payment arrived — useful for testing your webhook handler end-to-end.
+This triggers the full webhook flow as if a real payment arrived. Useful for testing your webhook handler end-to-end.
 
 ---
 
@@ -225,7 +225,7 @@ This triggers the full webhook flow as if a real payment arrived — useful for 
 | 400 | `VALIDATION_ERROR` | Missing or invalid fields |
 | 404 | `COLLECTION_NOT_FOUND` | No collection intent with this ID |
 | 409 | `COLLECTION_ALREADY_PAID` | Payment already received for this intent |
-| 410 | `COLLECTION_EXPIRED` | Intent has expired — create a new one |
+| 410 | `COLLECTION_EXPIRED` | Intent has expired. Create a new one |
 | 429 | `RATE_LIMIT_EXCEEDED` | Too many requests |
 
 ---

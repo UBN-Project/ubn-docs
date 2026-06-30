@@ -4,17 +4,17 @@ description: "Base URLs, request format, response format, and versioning"
 ---
 
 <Note>
-  New to the API? Read [Authentication](/api-reference/authentication) next — every request requires an API key, and payment requests require a signature on top of that.
+  New to the API? Read [Authentication](/api-reference/authentication) next. Every request requires an API key, and payment requests require a signature on top of that.
 </Note>
 
 ## Base URLs
 
-Every request you make goes to one of two base URLs depending on your stage of development. The two environments are completely separate — separate keys, separate accounts, separate transaction history.
+Every request you make goes to one of two base URLs depending on your stage of development. The two environments are completely separate: separate keys, separate accounts, separate transaction history.
 
 | Environment | Base URL | When to use |
 |-------------|----------|-------------|
-| **Sandbox** | `https://dev-api.onecluster.co` | Testing and development — no real money moves |
-| **Production** | `https://api.onecluster.co` | Live application — real transactions with real funds |
+| **Sandbox** | `https://api-partner.onecluster.co` | Testing and development, no real money moves |
+| **Production** | `https://api.onecluster.co` | Live application, real transactions with real funds |
 
 <Warning>
   Sandbox API keys (prefixed `ubn_sb_`) only work against the sandbox URL. Production keys (prefixed `ubn_pk_`) only work against the production URL. Using the wrong combination returns a `403 ENVIRONMENT_MISMATCH` error.
@@ -25,13 +25,13 @@ Every request you make goes to one of two base URLs depending on your stage of d
 All endpoints are available under the `/api/v1/` path prefix. For example:
 
 ```
-https://dev-api.onecluster.co/api/v1/accounts
+https://api-partner.onecluster.co/api/v1/accounts
 ```
 
 We follow these versioning commitments:
 
 - We will never remove or make breaking changes to a version without at least **6 months advance notice**.
-- New fields may be added to responses at any time — your code should ignore fields it does not recognise.
+- New fields may be added to responses at any time. Your code should ignore fields it does not recognise.
 - When a new version is released, the previous version continues to work until its end-of-life date is announced.
 - Version deprecation notices are published in the [Changelog](/resources/changelog) and emailed to all active API key holders.
 
@@ -52,18 +52,18 @@ Every request must include the headers marked as required. The optional headers 
 | `Authorization` | Yes | Your API key, prefixed with `ApiKey `. | `ApiKey ubn_sb_abc123` |
 | `Content-Type` | Yes (write requests) | Must be `application/json` for POST, PUT, and PATCH requests. Not required for GET or DELETE. | `application/json` |
 | `X-Correlation-ID` | No (recommended) | A UUID you generate and attach to every request. It is returned in the response and in any webhook events that result from this request. Invaluable for debugging. | `7f3a9c21-4e8b-4d02-b3d0-abc123456789` |
-| `X-Idempotency-Key` | Yes (write operations) | A UUID you generate to make POST requests safe to retry. If you send the same key twice, the second request returns the original response — no duplicate action occurs. See [Idempotency Keys](/api-reference/authentication#idempotency-keys). | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` |
+| `X-Idempotency-Key` | Yes (write operations) | A UUID you generate to make POST requests safe to retry. Send the same key twice and the second request returns the original response, with no duplicate action. See [Idempotency Keys](/api-reference/authentication#idempotency-keys). | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` |
 | `X-Signature` | Yes (payments and KYC) | An HMAC-SHA256 signature of the request body. Prevents tampering in transit. See [Signing Requests](/api-reference/authentication#signing-requests). | `sha256=3a5b9c...` |
 
 <Tip>
-  Generate your `X-Correlation-ID` and `X-Idempotency-Key` values as UUIDs (version 4). Most languages have a built-in or one-line library for this. The two values can be different — they serve different purposes.
+  Generate your `X-Correlation-ID` and `X-Idempotency-Key` values as UUIDs (version 4). Most languages have a built-in or one-line library for this. The two values can be different; they serve different purposes.
 </Tip>
 
 ## Response Format
 
 ### Standard Response Headers
 
-Every response from the API includes these headers. Check them — especially the quota headers — when building production-grade integrations.
+Every response from the API includes these headers. Check them, especially the quota headers, when building production-grade integrations.
 
 | Header | Description | Example |
 |--------|-------------|---------|
@@ -89,15 +89,15 @@ All successful responses wrap the returned data in a consistent envelope. The `d
 ```
 
 <ResponseField name="success" type="boolean" required>
-  Always `true` for successful responses. If this field is `false`, the response is an error — check the `code` field.
+  Always `true` for successful responses. If this field is `false`, the response is an error. Check the `code` field.
 </ResponseField>
 
 <ResponseField name="responseCode" type="string" required>
-  A two-character code. `"00"` means success. Non-zero codes indicate specific outcomes — see the [Error Reference](/api-reference/errors) for the full list.
+  A two-character code. `"00"` means success. Non-zero codes indicate specific outcomes. See the [Error Reference](/api-reference/errors) for the full list.
 </ResponseField>
 
 <ResponseField name="message" type="string" required>
-  A human-readable summary of what happened. Do not parse this string in code — use `responseCode` for programmatic checks.
+  A human-readable summary of what happened. Do not parse this string in code. Use `responseCode` for programmatic checks.
 </ResponseField>
 
 <ResponseField name="data" type="object" required>
@@ -106,7 +106,7 @@ All successful responses wrap the returned data in a consistent envelope. The `d
 
 ### Error Response Format (RFC 7807)
 
-When something goes wrong, the API returns an error in the [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807) format. This is an industry-standard format — if you have worked with other modern APIs you may recognise it.
+When something goes wrong, the API returns an error in the [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807) format. It's an industry standard. If you've worked with other modern APIs, you may recognise it.
 
 ```json
 {
@@ -125,7 +125,7 @@ When something goes wrong, the API returns an error in the [RFC 7807 Problem Det
 </ResponseField>
 
 <ResponseField name="title" type="string" required>
-  A short, human-readable summary of the error type. Stable — does not change between occurrences of the same error.
+  A short, human-readable summary of the error type. Stable, does not change between occurrences of the same error.
 </ResponseField>
 
 <ResponseField name="status" type="integer" required>
@@ -141,7 +141,7 @@ When something goes wrong, the API returns an error in the [RFC 7807 Problem Det
 </ResponseField>
 
 <ResponseField name="correlationId" type="string" required>
-  The correlation ID for this specific request. Include this when contacting support — it is the fastest way to find your request in our logs.
+  The correlation ID for this specific request. Include this when contacting support. It is the fastest way to find your request in our logs.
 </ResponseField>
 
 <ResponseField name="code" type="string" required>
@@ -194,4 +194,4 @@ All timestamps in request and response bodies use **ISO 8601 format** and are ex
 2025-03-25T14:30:00+01:00
 ```
 
-When filtering by date ranges (for example, fetching transactions between two dates), pass ISO 8601 timestamps with the `+01:00` offset. If you pass a UTC timestamp (with `Z` or `+00:00`), the API will accept it and convert it internally — but the response timestamps will always be returned in WAT.
+When filtering by date ranges (for example, fetching transactions between two dates), pass ISO 8601 timestamps with the `+01:00` offset. If you pass a UTC timestamp (with `Z` or `+00:00`), the API will accept it and convert it internally, but the response timestamps will always be returned in WAT.

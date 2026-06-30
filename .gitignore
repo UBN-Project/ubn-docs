@@ -1,1 +1,5 @@
 qa-reports/
+
+# Editor / runtime artifacts
+.DS_Store
+.claude-flow/

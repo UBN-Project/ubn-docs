@@ -3,13 +3,13 @@ title: "Rate Limits & Quotas"
 description: "How many API calls you can make and what to do when you hit the limit"
 ---
 
-Every API has limits. Limits protect every partner on the platform — including you — from one application monopolising shared infrastructure. Understanding how our limits work prevents surprises in production.
+Every API has limits. Limits protect every partner on the platform (including you) from one application monopolising shared infrastructure. Understanding how our limits work prevents surprises in production.
 
 ## Two Types of Limits
 
 <CardGroup cols={2}>
   <Card title="Rate Limits" icon="gauge-high">
-    The maximum number of requests allowed within a short time window (seconds or minutes). Rate limits prevent burst abuse — for example, a loop in your code that fires 500 requests in one second.
+    The maximum number of requests allowed within a short time window (seconds or minutes). Rate limits prevent burst abuse: for example, a loop in your code that fires 500 requests in one second.
   </Card>
   <Card title="Quotas" icon="calendar">
     The maximum number of requests allowed within your billing period (typically one month). Quotas are determined by your partner plan. Hitting a quota means you have used your allocation for the period, not just a short burst.
@@ -46,7 +46,7 @@ These limits apply per API key unless otherwise noted. "Per IP" limits apply per
 
 ## Response Headers to Monitor
 
-Every API response includes headers that tell you where you stand. Read these in your application — do not rely on hitting a `429` to detect a limit.
+Every API response includes headers that tell you where you stand. Read these in your application. Do not rely on hitting a `429` to detect a limit.
 
 | Header | What It Means |
 |---|---|
@@ -64,7 +64,7 @@ Every API response includes headers that tell you where you stand. Read these in
 
 ## What to Do When Rate Limited (HTTP 429)
 
-A `429` response means you sent requests too fast. The right response is **exponential backoff with jitter**: wait a little, retry, wait a little longer if it fails again, and so on. Do not retry immediately in a tight loop — that makes the problem worse.
+A `429` response means you sent requests too fast. The right response is **exponential backoff with jitter**: wait a little, retry, wait a little longer if it fails again, and so on. Do not retry immediately in a tight loop. That makes the problem worse.
 
 <CodeGroup>
   ```javascript Node.js
@@ -75,7 +75,7 @@ A `429` response means you sent requests too fast. The right response is **expon
 
         if (response.status === 429) {
           const retryAfter = parseInt(response.headers.get("Retry-After") || "1", 10);
-          // Exponential backoff: 1s, 2s, 4s, 8s, 16s — plus random jitter
+          // Exponential backoff: 1s, 2s, 4s, 8s, 16s, plus random jitter
           const jitter = Math.random() * 1000; // up to 1 extra second
           const delay = Math.min(retryAfter * 1000, (2 ** attempt) * 1000) + jitter;
 
@@ -93,7 +93,7 @@ A `429` response means you sent requests too fast. The right response is **expon
 
   // Usage
   const response = await callWithRetry(() =>
-    fetch("https://dev-api.onecluster.co/api/v1/payments/transfer", {
+    fetch("https://api-partner.onecluster.co/api/v1/payments/transfer", {
       method: "POST",
       headers: {
         "Authorization": `ApiKey ${process.env.UBN_API_KEY}`,
@@ -131,7 +131,7 @@ A `429` response means you sent requests too fast. The right response is **expon
 
   def make_transfer():
       return requests.post(
-          "https://dev-api.onecluster.co/api/v1/payments/transfer",
+          "https://api-partner.onecluster.co/api/v1/payments/transfer",
           headers={
               "Authorization": f"ApiKey {os.environ['UBN_API_KEY']}",
               "Content-Type": "application/json"
@@ -151,7 +151,7 @@ A `429` response means you sent requests too fast. The right response is **expon
 
 ## What to Do When Quota Is Exhausted (HTTP 402)
 
-A `402 Payment Required` response means you have used all the requests in your plan for this billing period. Unlike a rate limit, waiting and retrying will not help — you need to either wait for the reset date (shown in `X-Quota-Reset`) or upgrade your plan.
+A `402 Payment Required` response means you have used all the requests in your plan for this billing period. Unlike a rate limit, waiting and retrying will not help. You need to either wait for the reset date (shown in `X-Quota-Reset`) or upgrade your plan.
 
 To discuss your current quota, upgrade your plan, or request a temporary increase for a high-volume event (such as a product launch), email [baas-support@unionbank.ng](mailto:baas-support@unionbank.ng) with:
 
@@ -167,7 +167,7 @@ Give us at least 5 business days' notice for quota increases. Same-day increases
 
 **Sandbox has the same rate limits as production.** This is intentional.
 
-If sandbox had no limits, you would build and test your application without backoff logic — and then hit production limits immediately on launch. The sandbox limits ensure that your retry and backoff logic is tested and working before you go live.
+If sandbox had no limits, you would build and test your application without backoff logic, and then hit production limits immediately on launch. The sandbox limits ensure that your retry and backoff logic is tested and working before you go live.
 
 <Tip>
   Test your backoff logic explicitly in the sandbox. Write a test that sends requests in a tight loop until it gets a `429`, then verify that your application handles it gracefully and recovers.

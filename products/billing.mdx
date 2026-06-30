@@ -1,11 +1,11 @@
 ---
 title: "Billing & Wallet"
-description: "How API billing works — prepaid wallet, pay-as-you-go, lien-capture-release"
+description: "How API billing works: prepaid wallet, pay-as-you-go, lien-capture-release"
 ---
 
 ## How Billing Works
 
-UBN BaaS uses a **prepaid pay-as-you-go** billing model. Every partner has a wallet that must have sufficient balance before making API calls. There are no monthly subscriptions, no credit terms, and no post-pay invoices.
+UBN BaaS uses a **prepaid pay-as-you-go** billing model. Every partner has a wallet that must have a sufficient balance before you can make API calls. There are no monthly subscriptions, no credit terms, and no post-pay invoices.
 
 <Info>
   Your wallet is automatically created when your go-live request is approved. You do not need to create it manually.
@@ -32,8 +32,8 @@ Every billable API call follows this pattern:
 | Phase | What happens | Your balance |
 |-------|-------------|-------------|
 | **Lien (Hold)** | The cost of the API call is reserved from your available balance | Available balance decreases |
-| **Capture (Charge)** | The API call succeeded — the hold becomes a permanent charge | Balance decreases permanently |
-| **Release (Refund)** | The API call failed — the hold is released | Available balance is restored |
+| **Capture (Charge)** | The API call succeeded. The hold becomes a permanent charge | Balance decreases permanently |
+| **Release (Refund)** | The API call failed. The hold is released | Available balance is restored |
 
 <Note>
   If an API call times out (status unknown), the hold remains active for up to 24 hours. If the status is still unknown after 24 hours, the hold is automatically released and your balance is restored.
@@ -45,9 +45,9 @@ Your wallet has three balance fields:
 
 | Field | Meaning |
 |-------|---------|
-| **Balance** | Total credits minus total charges — your overall API credit |
+| **Balance** | Total credits minus total charges. Your overall API credit |
 | **Liened Amount** | Sum of all active holds (in-flight API calls) |
-| **Available Balance** | `Balance - Liened Amount` — what you can spend on new API calls |
+| **Available Balance** | `Balance - Liened Amount`. What you can spend on new API calls |
 
 ### Pricing
 

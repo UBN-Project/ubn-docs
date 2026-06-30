@@ -1,11 +1,11 @@
-# Mintlify Documentation — Auto-Deploy Workflow
+# Mintlify Documentation, Auto-Deploy Workflow
 #
 # Triggers on every push to main that touches the docs/ folder.
 # Mintlify's GitHub App handles the actual build + deploy.
 # This workflow validates the mint.json config and broken links BEFORE merge.
 #
 # Secrets required (set in GitHub → Settings → Secrets):
-#   MINTLIFY_TOKEN  — your Mintlify API token (from mintlify.com/settings)
+#   MINTLIFY_TOKEN , your Mintlify API token (from mintlify.com/settings)
 
 name: Mintlify Docs
 

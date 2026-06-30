@@ -3,7 +3,7 @@ title: "Postman Collection"
 description: "Test the UBN BaaS API with our ready-made Postman collection"
 ---
 
-The UBN BaaS Postman collection gives you a ready-to-use set of API requests so you can explore every endpoint, test your credentials, and understand request and response shapes — without writing a single line of code.
+The UBN BaaS Postman collection gives you a ready-to-use set of API requests so you can explore every endpoint, test your credentials, and understand request and response shapes without writing a single line of code.
 
 ## What Is Postman?
 
@@ -17,7 +17,7 @@ Download it free at [postman.com](https://www.postman.com/downloads/).
 
 <Steps>
   <Step title="Download and install Postman">
-    Go to [postman.com/downloads](https://www.postman.com/downloads/) and download the version for your operating system (Windows, macOS, or Linux). Create a free Postman account when prompted — you need an account to use the environment and collection features.
+    Go to [postman.com/downloads](https://www.postman.com/downloads/) and download the version for your operating system (Windows, macOS, or Linux). Create a free Postman account when prompted. You need an account to use the environment and collection features.
   </Step>
 
   <Step title="Import the UBN BaaS collection">
@@ -38,22 +38,22 @@ Download it free at [postman.com](https://www.postman.com/downloads/).
 
     In Postman:
     1. Click the **Environments** icon in the left sidebar (looks like a slider).
-    2. Click **+** to create a new environment. Name it `UBN BaaS — Sandbox`.
+    2. Click **+** to create a new environment. Name it `UBN BaaS Sandbox`.
     3. Add the following variables:
 
     | Variable | Initial Value | Description |
     |---|---|---|
-    | `base_url` | `https://dev-api.onecluster.co` | The sandbox API base URL |
+    | `base_url` | `https://api-partner.onecluster.co` | The sandbox API base URL |
     | `api_key` | _(your sandbox API key)_ | From the portal under API Keys |
     | `partner_id` | _(your Partner ID)_ | From the portal under Account Settings, e.g. `PRT-0001` |
-    | `signing_secret` | _(your signing secret)_ | From the portal — required for payment and KYC requests |
+    | `signing_secret` | _(your signing secret)_ | From the portal, required for payment and KYC requests |
     | `webhook_secret` | _(your webhook signing secret)_ | From the portal under Webhook Settings |
 
     4. Click **Save**.
-    5. In the top-right corner of Postman, select `UBN BaaS — Sandbox` from the environment dropdown so the collection uses these values.
+    5. In the top-right corner of Postman, select `UBN BaaS Sandbox` from the environment dropdown so the collection uses these values.
 
     <Warning>
-      Treat the **Initial Value** column as the value visible to anyone with access to your Postman workspace. For credentials, use **Current Value** instead — it is local to your machine and not synced to Postman's cloud. Click the eye icon next to each variable to switch between columns.
+      Treat the **Initial Value** column as the value visible to anyone with access to your Postman workspace. For credentials, use **Current Value** instead. It is local to your machine and not synced to Postman's cloud. Click the eye icon next to each variable to switch between columns.
     </Warning>
   </Step>
 
@@ -75,15 +75,15 @@ Download it free at [postman.com](https://www.postman.com/downloads/).
   <Step title="Follow the collection folder structure">
     The collection is organised into folders that match the documentation sections. Work through them in order when first exploring the API:
 
-    1. **Health** — connectivity check
-    2. **Auth** — partner registration and email verification
-    3. **KYB** — document submission
-    4. **API Keys** — generate, rotate, revoke
-    5. **KYC** — BVN, NIN, and CAC verification
-    6. **Accounts** — create and query virtual accounts
-    7. **Payments** — account enquiry and transfers
-    8. **Collections** — receive inbound payments
-    9. **Webhooks** — register endpoints, view delivery history
+    1. **Health**: connectivity check
+    2. **Auth**: partner registration and email verification
+    3. **KYB**: document submission
+    4. **API Keys**: generate, rotate, revoke
+    5. **KYC**: BVN, NIN, and CAC verification
+    6. **Accounts**: create and query virtual accounts
+    7. **Payments**: account enquiry and transfers
+    8. **Collections**: receive inbound payments
+    9. **Webhooks**: register endpoints, view delivery history
   </Step>
 </Steps>
 
@@ -93,13 +93,13 @@ Download it free at [postman.com](https://www.postman.com/downloads/).
 
 | Variable | Where to Find It | Example Value |
 |---|---|---|
-| `base_url` | Fixed — use the sandbox URL during development | `https://dev-api.onecluster.co` |
+| `base_url` | Fixed. Use the sandbox URL during development | `https://api-partner.onecluster.co` |
 | `api_key` | Portal → API Keys → Generate Key | `sk_sandbox_abc123...` |
 | `partner_id` | Portal → Account Settings | `PRT-0001` |
 | `signing_secret` | Portal → API Keys → Signing Secret | `signingsecret_abc123...` |
 | `webhook_secret` | Portal → Webhooks → Signing Secret | `whsec_abc123...` |
 
-When you switch to production, create a second Postman environment called `UBN BaaS — Production` with `base_url` set to `https://api.onecluster.co` and your production credentials. Switch between environments using the dropdown in the top-right corner — no changes to the requests themselves are needed.
+When you switch to production, create a second Postman environment called `UBN BaaS Production` with `base_url` set to `https://api.onecluster.co` and your production credentials. Switch between environments using the dropdown in the top-right corner. No changes to the requests themselves are needed.
 
 ---
 
@@ -109,7 +109,7 @@ The collection includes **pre-request scripts** that run automatically before ea
 
 <CardGroup cols={2}>
   <Card title="X-Correlation-ID" icon="fingerprint">
-    A unique identifier generated for every request. Postman sets this automatically using a UUID. When you report an issue to support, copy this value from the request headers tab — it is how we find your specific request in our logs.
+    A unique identifier generated for every request. Postman sets this automatically using a UUID. When you report an issue to support, copy this value from the request headers tab. It is how we find your specific request in our logs.
   </Card>
   <Card title="Content-Type" icon="code">
     Set to `application/json` on all POST and PATCH requests. The pre-request script handles this so you only need to fill in the request body.
@@ -120,7 +120,7 @@ The collection includes **pre-request scripts** that run automatically before ea
 
 ## Request Signing for Payments and KYC
 
-Payment and KYC endpoints require an `X-Signature` header — a cryptographic signature that proves the request body has not been modified in transit.
+Payment and KYC endpoints require an `X-Signature` header: a cryptographic signature that proves the request body has not been modified in transit.
 
 <Note>
   The collection includes a pre-request script that **computes the HMAC-SHA256 signature automatically** using the `signing_secret` variable in your environment. You do not need to compute it manually. Just set the `signing_secret` variable correctly and Postman handles the rest.
@@ -136,18 +136,18 @@ const signature = CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);
 pm.request.headers.add({ key: "X-Signature", value: signature });
 ```
 
-If you later implement signing in your own application, this is the exact algorithm to replicate. See [API Reference — Authentication](/api-reference/authentication) for a full explanation.
+If you later implement signing in your own application, this is the exact algorithm to replicate. See [API Reference: Authentication](/api-reference/authentication) for a full explanation.
 
 ---
 
 ## Tips for Effective Testing
 
 <Tip>
-  Use the **Postman Console** (View → Postman Console, or Alt+Cmd+C on Mac) to see exactly what request was sent, including all headers. This is invaluable when debugging signature issues — you can see the exact body that was signed alongside the resulting header.
+  Use the **Postman Console** (View → Postman Console, or Alt+Cmd+C on Mac) to see exactly what request was sent, including all headers. Invaluable when debugging signature issues: you can see the exact body that was signed alongside the resulting header.
 </Tip>
 
 <Tip>
-  Right-click any request and choose **Duplicate** to create a copy for testing variations. For example, duplicate the transfer request to have one for testing a successful transfer and one for testing an invalid account number — without losing your working configuration.
+  Right-click any request and choose **Duplicate** to create a copy for testing variations. For example, duplicate the transfer request to have one for testing a successful transfer and one for testing an invalid account number without losing your working configuration.
 </Tip>
 
 <Tip>

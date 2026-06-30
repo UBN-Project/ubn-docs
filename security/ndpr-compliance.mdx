@@ -9,14 +9,14 @@ Both you and Union Bank Nigeria have legal obligations under Nigerian data prote
 
 The **Nigeria Data Protection Regulation (NDPR)** is Nigeria's primary privacy law, issued by the National Information Technology Development Agency (NITDA) in 2019. It governs how organisations collect, store, process, and share personal data about Nigerian residents.
 
-If you have heard of Europe's **GDPR**, the NDPR is the Nigerian equivalent. The core principles are the same:
+If you've heard of Europe's **GDPR**: the NDPR is the Nigerian equivalent. The core principles are the same:
 
 - You must have a lawful reason to collect personal data.
 - You must collect only the data you actually need (minimisation).
 - You must keep it secure.
 - People have the right to know what data you hold about them, and to ask you to delete it.
 
-As a BaaS partner, you are a **data processor** — you collect personal data from your customers and pass some of it to us for verification. We are a **data processor** and, in some contexts, a **data controller**. Both of us are responsible for compliance. A failure on your side does not insulate us, and a failure on our side does not insulate you.
+As a BaaS partner, you are a **data processor**: you collect personal data from your customers and pass some of it to us for verification. We are a **data processor** and, in some contexts, a **data controller**. Both of us are responsible for compliance. A failure on your side does not insulate us, and a failure on our side does not insulate you.
 
 <Info>
   NDPR compliance is a condition of your partner agreement. Non-compliance can result in suspension of your API access, independent of any regulatory consequences you may face.
@@ -32,7 +32,7 @@ We do not process a person's personal data until we have a record that they cons
 
 ### PII Minimisation
 
-**PII** stands for Personally Identifiable Information — any data that can identify a specific person, such as a BVN, NIN, date of birth, or phone number.
+**PII** stands for Personally Identifiable Information: any data that can identify a specific person, such as a BVN, NIN, date of birth, or phone number.
 
 We apply minimisation in two ways:
 
@@ -41,7 +41,7 @@ We apply minimisation in two ways:
 
 ### Immutable Audit Trail
 
-Every access to personal data — every KYC verification call, every account lookup, every document retrieval — is recorded in our WORM audit logs. These records cannot be altered or deleted. In the event of a regulatory inquiry or a data subject access request, we have a complete, tamper-proof record of every data access event.
+Every access to personal data (every KYC verification call, every account lookup, every document retrieval) is recorded in our WORM audit logs. These records cannot be altered or deleted. In the event of a regulatory inquiry or a data subject access request, we have a complete, tamper-proof record of every data access event.
 
 ### Data Retention
 
@@ -101,7 +101,7 @@ The following table shows every PII field we handle and exactly how we return it
 | KYB Documents | (uploaded file) | Not returned in any API response | Encrypted at rest (AES-256) |
 
 <Note>
-  Masked values are consistent — the same input always returns the same mask. You can use them to confirm that a customer's number matches what they entered, without ever seeing the raw value yourself.
+  Masked values are consistent: the same input always returns the same mask. You can use them to confirm that a customer's number matches what they entered, without ever seeing the raw value yourself.
 </Note>
 
 ---

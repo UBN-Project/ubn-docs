@@ -3,16 +3,16 @@ info:
   title: Union Bank BaaS API
   version: "1.0"
   description: |
-    **Union Bank Nigeria — Banking as a Service (BaaS) Platform**
+    **Union Bank Nigeria, Banking as a Service (BaaS) Platform**
 
     Build financial products on top of Union Bank's core banking infrastructure.
     This API gives your application the ability to open virtual accounts, initiate
-    payments, collect money, verify identities, and manage webhooks — all in one place.
+    payments, collect money, verify identities, and manage webhooks, all in one place.
 
     ## Before You Start
 
     You must complete the **partner onboarding journey** before your API keys work:
-    1. Register at [dev-ubn-ui.onecluster.co](https://dev-ubn-ui.onecluster.co)
+    1. Register at [ubn-ui.onecluster.co](https://ubn-ui.onecluster.co)
     2. Verify your business email
     3. Upload your business documents (KYB)
     4. Pass identity verification (KYC)
@@ -22,7 +22,7 @@ info:
 
     | Environment | Base URL |
     |-------------|----------|
-    | Sandbox (for testing) | `https://dev-api.onecluster.co` |
+    | Sandbox (for testing) | `https://api-partner.onecluster.co` |
     | Production (for live apps) | `https://api.onecluster.co` |
 
     ## How to Authenticate
@@ -42,7 +42,7 @@ info:
     |--------|----------|-------------|
     | `Authorization` | Yes | Your API key. Format: `ApiKey ubn_sb_xxx` |
     | `X-Correlation-ID` | No | A UUID you choose, used to trace this request in logs. We generate one if you omit it. |
-    | `X-Idempotency-Key` | Yes (write ops) | A UUID you choose. If you send the same request twice with the same key, we return the original result — not a duplicate. |
+    | `X-Idempotency-Key` | Yes (write ops) | A UUID you choose. If you send the same request twice with the same key, we return the original result, not a duplicate. |
     | `X-Signature` | Yes (payments, KYC) | HMAC-SHA256 signature of the request body. See Authentication guide. |
 
     ## Standard Response Headers
@@ -65,21 +65,15 @@ info:
     url: https://unionbank.ng/terms
 
 servers:
-  - url: https://dev-api.onecluster.co
-    description: Sandbox — Use this for testing. No real money moves.
+  - url: https://api-partner.onecluster.co
+    description: Sandbox: Use this for testing. No real money moves.
   - url: https://api.onecluster.co
-    description: Production — Live environment. Real transactions.
+    description: Production: Live environment. Real transactions.
 
 security:
   - ApiKeyAuth: []
 
 tags:
-  - name: Onboarding
-    description: Register your company and get approved to use the API
-  - name: API Keys
-    description: Create, rotate, and revoke your API keys
-  - name: Production Access
-    description: Request access to move from sandbox to production
   - name: Accounts
     description: Open and manage virtual bank accounts
   - name: Payments
@@ -96,525 +90,6 @@ paths:
   # /health and /status are defined as standalone MDX pages (no auth).
   # Removed from OpenAPI spec to prevent Mintlify from overriding authMethod: "none".
 
-  # ── ONBOARDING ───────────────────────────────────────────────────────────────
-  /api/Auth/register:
-    post:
-      summary: Register your company
-      description: |
-        **Step 1 of onboarding.** Create a new partner account for your company.
-
-        After registering, you will receive a verification email. You must verify
-        your email before you can upload business documents or receive an API key.
-
-        **What you need:**
-        - Your company's registered name (must match your CAC certificate)
-        - A corporate email address (free emails like Gmail are rejected)
-        - Your UBN bank account number
-        - Your agreement to the Terms & Conditions and NDPR data consent
-
-        **What happens next:**
-        - We send a one-time verification code to your email
-        - Your account is created with status `PENDING_EMAIL_VERIFICATION`
-        - Your `partnerId` is returned — save this, you'll need it for all future calls
-      operationId: registerPartner
-      tags: [Onboarding]
-      security: []
-      parameters:
-        - name: X-Idempotency-Key
-          in: header
-          required: true
-          description: A unique UUID you generate. If you accidentally submit twice, this prevents creating a duplicate account.
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
-        - name: X-Correlation-ID
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterRequest"
-            example:
-              companyName: "TechFin Solutions Ltd"
-              email: "cto@techfin.ng"
-              password: "SecurePass123!"
-              confirmPassword: "SecurePass123!"
-              phoneNumber: "+2348012345678"
-              ubnAccountNumber: "0123456789"
-              ndprConsent: true
-              termsAccepted: true
-              captchaToken: "03AGdBq24PBauq..."
-      responses:
-        "201":
-          description: Registration successful — check your email for a verification code
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RegisterResponse"
-              example:
-                success: true
-                responseCode: "00"
-                message: "Verification email sent. Check your inbox."
-                data:
-                  partnerId: "9a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d"
-                  email: "cto@techfin.ng"
-                  ndprConsentAt: "2026-03-25T10:00:00+01:00"
-                  status: "PENDING_EMAIL_VERIFICATION"
-        "409":
-          description: This email is already registered
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetails"
-        "422":
-          description: Validation failed (e.g. NDPR consent not given, free email used)
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetails"
-              examples:
-                ndprConsentMissing:
-                  summary: NDPR consent not given
-                  value:
-                    type: "https://api.onecluster.co/errors/ndpr-consent-required"
-                    title: "NDPR Consent Required"
-                    status: 422
-                    detail: "You must agree to data processing under NDPR to register."
-                    code: "NDPR_CONSENT_REQUIRED"
-                freeEmailRejected:
-                  summary: Gmail or Yahoo email used
-                  value:
-                    type: "https://api.onecluster.co/errors/corporate-email-required"
-                    title: "Corporate Email Required"
-                    status: 422
-                    detail: "Free email providers (Gmail, Yahoo, Hotmail) are not accepted. Use your company email."
-                    code: "FREE_EMAIL_REJECTED"
-
-  /api/Auth/verifyEmailCode:
-    post:
-      summary: Verify your email address
-      description: |
-        **Step 2 of onboarding.** Submit the one-time code sent to your email after registration.
-
-        The code expires after **24 hours**. If it expires, register again to receive a new code.
-
-        Once verified, your account moves to `PENDING_KYB_DOCUMENTS` status and you can
-        begin uploading your business documents.
-      operationId: verifyEmailCode
-      tags: [Onboarding]
-      security: []
-      parameters:
-        - name: X-Correlation-ID
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, code]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  description: The email address you registered with
-                  example: "cto@techfin.ng"
-                code:
-                  type: string
-                  description: The 6-digit code from your verification email
-                  example: "847291"
-      responses:
-        "200":
-          description: Email verified successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessEnvelope"
-              example:
-                success: true
-                responseCode: "00"
-                message: "Email verified. You may now upload your business documents."
-                data: {}
-        "400":
-          description: Verification code has expired
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetails"
-              example:
-                type: "https://api.onecluster.co/errors/code-expired"
-                title: "Verification Code Expired"
-                status: 400
-                detail: "The verification code has expired. Please register again to receive a new code."
-                code: "CODE_EXPIRED"
-        "409":
-          description: Code already used
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetails"
-
-  # ── API KEYS ─────────────────────────────────────────────────────────────────
-  /api/v1/partners/{partnerId}/api-keys:
-    get:
-      summary: List your API keys
-      description: |
-        Returns all API keys for your account. For security, only the key **prefix**
-        (first 8 characters) is shown — never the full key. If you have lost a key,
-        you must rotate it to get a new one.
-      operationId: listApiKeys
-      tags: [API Keys]
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          description: Your Partner ID (received during registration)
-          schema:
-            type: string
-            format: uuid
-        - name: X-Correlation-ID
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: List of API keys
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/SuccessEnvelope"
-                  - properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/ApiKeyMetadata"
-              example:
-                success: true
-                responseCode: "00"
-                message: "Keys retrieved"
-                data:
-                  - keyId: "key-uuid-here"
-                    prefix: "ubn_sb_aB"
-                    environment: "SANDBOX"
-                    status: "ACTIVE"
-                    createdAt: "2026-03-25T10:00:00+01:00"
-                    revokedAt: null
-                    gracePeriodEndsAt: null
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-    post:
-      summary: Generate a new API key
-      description: |
-        Creates a new API key for your account.
-
-        ⚠️ **Important:** The full API key is returned **only once** in this response.
-        Store it securely immediately. We never show the full key again after this call.
-
-        - **Sandbox keys** start with `ubn_sb_` and only work against the sandbox environment
-        - **Production keys** start with `ubn_pk_` and only work against production
-
-        You must have completed KYB + KYC approval before requesting a production key.
-      operationId: generateApiKey
-      tags: [API Keys]
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: X-Correlation-ID
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [environment]
-              properties:
-                environment:
-                  type: string
-                  enum: [SANDBOX, PRODUCTION]
-                  description: Which environment this key is for
-            example:
-              environment: "SANDBOX"
-      responses:
-        "201":
-          description: API key created — copy the rawKey now, it will not be shown again
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/SuccessEnvelope"
-                  - properties:
-                      data:
-                        type: object
-                        properties:
-                          keyId:
-                            type: string
-                            format: uuid
-                          rawKey:
-                            type: string
-                            description: "Full API key — shown ONCE only. Store securely."
-                          prefix:
-                            type: string
-                          environment:
-                            type: string
-                          createdAt:
-                            type: string
-                            format: date-time
-              example:
-                success: true
-                responseCode: "00"
-                message: "API key created. Store the rawKey securely — it will not be shown again."
-                data:
-                  keyId: "key-uuid-here"
-                  rawKey: "ubn_sb_aBcDeFgHiJkLmNoPqRsTuVwXyZ123456"
-                  prefix: "ubn_sb_aB"
-                  environment: "SANDBOX"
-                  createdAt: "2026-03-25T10:00:00+01:00"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-  /api/v1/partners/{partnerId}/api-keys/{keyId}/rotate:
-    post:
-      summary: Rotate an API key
-      description: |
-        Generates a new API key and gives you **72 hours** to update your systems.
-        During this 72-hour grace period, your **old key continues to work** — you will
-        see an `X-Key-Rotation-Warning` header on responses to remind you.
-
-        After 72 hours, the old key is automatically revoked.
-
-        Use this to cycle keys on a schedule or if you suspect a key has been leaked.
-        If a key has definitely been leaked, use **Revoke** instead (immediate).
-      operationId: rotateApiKey
-      tags: [API Keys]
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: keyId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: X-Correlation-ID
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "201":
-          description: New key generated. Old key valid for 72 more hours.
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/SuccessEnvelope"
-                  - properties:
-                      data:
-                        type: object
-                        properties:
-                          newKeyId:
-                            type: string
-                            format: uuid
-                          rawKey:
-                            type: string
-                            description: New raw key — shown ONCE only
-                          gracePeriodEndsAt:
-                            type: string
-                            format: date-time
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-  /api/v1/partners/{partnerId}/api-keys/{keyId}:
-    delete:
-      summary: Revoke an API key immediately
-      description: |
-        Permanently revokes an API key with **no grace period**. Any request using
-        this key after revocation will receive a `401 Unauthorized` response.
-
-        Use this immediately if you believe a key has been compromised.
-        Use **Rotate** instead if you simply want to cycle keys on a schedule.
-      operationId: revokeApiKey
-      tags: [API Keys]
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: keyId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: X-Correlation-ID
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "204":
-          description: Key revoked. It is immediately invalid.
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  # ── PRODUCTION ACCESS ─────────────────────────────────────────────────────────
-  /api/v1/partners/{partnerId}/production-access-request:
-    post:
-      summary: Request production access
-      description: |
-        After testing in sandbox, submit this request to move to the live production environment.
-
-        **What we review:**
-        - Which API products you want to use (Accounts, Payments, Collections, KYC)
-        - Your business justification (minimum 50 characters)
-        - The IP addresses your servers will call from (for security allowlisting)
-        - Your webhook callback URLs
-        - A completed VPN Connection Form (for secure connectivity)
-
-        **Review timeline:** 2–5 business days. You will receive an email when approved or if we have questions.
-      operationId: requestProductionAccess
-      tags: [Production Access]
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: X-Correlation-ID
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [apiProducts, justification, productionIpAddresses, callbackUrls]
-              properties:
-                apiProducts:
-                  type: array
-                  items:
-                    type: string
-                    enum: [Accounts, Payments, Collections, KYC]
-                  description: Which products you want to use in production
-                  minItems: 1
-                justification:
-                  type: string
-                  minLength: 50
-                  description: Explain your use case and why you need production access
-                productionIpAddresses:
-                  type: array
-                  items:
-                    type: string
-                  description: IP addresses your servers will call from (we add these to our allowlist)
-                callbackUrls:
-                  type: array
-                  items:
-                    type: string
-                    format: uri
-                  description: Your webhook endpoints (must be HTTPS)
-                vpnConnectionForm:
-                  type: string
-                  format: binary
-                  description: Completed VPN Connection Form PDF (provided by your UBN relationship manager)
-      responses:
-        "202":
-          description: Request received — our team will review within 2-5 business days
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/SuccessEnvelope"
-                  - properties:
-                      data:
-                        $ref: "#/components/schemas/ProductionAccessStatus"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "422":
-          $ref: "#/components/responses/UnprocessableEntity"
-
-    get:
-      summary: Check production access status
-      description: Check where your production access request is in the review process.
-      operationId: getProductionAccessStatus
-      tags: [Production Access]
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: X-Correlation-ID
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Current status of your production access request
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/SuccessEnvelope"
-                  - properties:
-                      data:
-                        $ref: "#/components/schemas/ProductionAccessStatus"
-              example:
-                success: true
-                responseCode: "00"
-                message: "Request retrieved"
-                data:
-                  requestId: "req-uuid"
-                  status: "UNDER_REVIEW"
-                  apiProducts: ["Accounts", "Payments"]
-                  requestedAt: "2026-03-25T10:00:00+01:00"
-                  reviewedAt: null
-                  slaDeadline: "2026-03-30T10:00:00+01:00"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
   # ── ACCOUNTS ─────────────────────────────────────────────────────────────────
   /api/v1/accounts:
     post:
@@ -624,8 +99,8 @@ paths:
         accounts (with valid account numbers) that sit under your master account.
 
         **Two types:**
-        - **STATIC** — Permanent account. Stays open until you close it. Good for assigning one account per customer.
-        - **DYNAMIC** — Temporary account with an expiry time (in hours). After expiry, it is automatically closed. Good for one-time payment links.
+        - **STATIC**: Permanent account. Stays open until you close it. Good for assigning one account per customer.
+        - **DYNAMIC**: Temporary account with an expiry time (in hours). After expiry, it is automatically closed. Good for one-time payment links.
 
         Funds received into virtual accounts show up in your dashboard and trigger webhook notifications.
       operationId: createAccount
@@ -796,7 +271,7 @@ paths:
               bankCode: "058"
       responses:
         "200":
-          description: Account found — verify the name before proceeding
+          description: Account found, verify the name before proceeding
           content:
             application/json:
               schema:
@@ -828,19 +303,19 @@ paths:
         3. Sign the request body with HMAC-SHA256 and include in `X-Signature` header
 
         **Transfer types:**
-        - **NIP (NIP Instant Payment)** — Transfers to other banks. Near-instant (usually seconds). Requires BVN of both sender and recipient.
-        - **NEFT** — For larger, non-time-sensitive transfers.
+        - **NIP (NIP Instant Payment)**: Transfers to other banks. Near-instant (usually seconds). Requires BVN of both sender and recipient.
+        - **NEFT**: For larger, non-time-sensitive transfers.
 
         **Fee modes** control how charges appear on the statement:
-        - `LUMP_FEE_VAT` (default) — One entry for the principal, one for fees+VAT combined
-        - `LUMP_ALL` — A single combined debit for everything
-        - `SPLIT_FEE_VAT` — Three separate entries: principal, fees, and VAT
+        - `LUMP_FEE_VAT` (default): One entry for the principal, one for fees+VAT combined
+        - `LUMP_ALL`: A single combined debit for everything
+        - `SPLIT_FEE_VAT`: Three separate entries: principal, fees, and VAT
 
-        Transfers are processed asynchronously. This endpoint returns `202 Accepted` —
+        Transfers are processed asynchronously. This endpoint returns `202 Accepted` -
         not `200 OK`. Poll `/api/v1/payments/{transactionRef}/status` to get the final result.
 
         **Idempotency:** Include a unique `X-Idempotency-Key`. If your network fails after
-        sending but before receiving a response, resend with the same key — you will get
+        sending but before receiving a response, resend with the same key, you will get
         the original result, not a duplicate transfer.
       operationId: initiateTransfer
       tags: [Payments]
@@ -883,7 +358,7 @@ paths:
               feeEntryMode: "LUMP_FEE_VAT"
       responses:
         "202":
-          description: Transfer accepted — poll the status endpoint to get the final result
+          description: Transfer accepted, poll the status endpoint to get the final result
           content:
             application/json:
               schema:
@@ -914,11 +389,11 @@ paths:
         Poll this endpoint after initiating a transfer to get the final outcome.
 
         **Status values:**
-        - `PENDING` — Transfer is queued and will be processed shortly
-        - `PROCESSING` — Transfer is being processed by the banking system
-        - `SUCCESSFUL` — Transfer completed. Funds have left your account.
-        - `FAILED` — Transfer failed. Funds were not debited (or were reversed).
-        - `REVERSED` — Transfer was initially accepted but then reversed by the destination bank
+        - `PENDING`: Transfer is queued and will be processed shortly
+        - `PROCESSING`: Transfer is being processed by the banking system
+        - `SUCCESSFUL`: Transfer completed. Funds have left your account.
+        - `FAILED`: Transfer failed. Funds were not debited (or were reversed).
+        - `REVERSED`: Transfer was initially accepted but then reversed by the destination bank
 
         **Recommended polling:** Check every 5 seconds for up to 60 seconds. Most transfers
         complete within 30 seconds during business hours.
@@ -1039,7 +514,7 @@ paths:
         **Requirements for your webhook endpoint:**
         - Must be HTTPS (not HTTP)
         - Must return `200 OK` within 30 seconds of receiving the notification
-        - We test-ping your URL during registration — if it does not respond, registration fails
+        - We test-ping your URL during registration, if it does not respond, registration fails
         - Must verify the `X-Signature` header on incoming webhooks (for security)
 
         **Retry behaviour:** If your endpoint returns anything other than `200`, we retry
@@ -1194,7 +669,7 @@ paths:
       summary: Verify a NIN (National Identification Number)
       description: |
         Verifies a NIN against the NIMC (National Identity Management Commission) database.
-        Returns masked identity information — full PII is never exposed.
+        Returns masked identity information, full PII is never exposed.
       operationId: verifyNin
       tags: [KYC]
       parameters:
@@ -1294,7 +769,7 @@ components:
 
         - Sandbox keys start with `ubn_sb_`
         - Production keys start with `ubn_pk_`
-        - Never use production keys during testing — they will charge real money
+        - Never use production keys during testing, they will charge real money
     BearerAuth:
       type: http
       scheme: bearer
@@ -1314,7 +789,7 @@ components:
       description: |
         A UUID v4 you generate to trace this request through our systems.
         If you don't provide one, we generate it for you.
-        Always include it in support requests — it helps us find your request in logs.
+        Always include it in support requests, it helps us find your request in logs.
       schema:
         type: string
         format: uuid
@@ -1326,7 +801,7 @@ components:
       required: true
       description: |
         A UUID you generate. If you send the same request twice with the same key
-        (within 24 hours), we return the original response — not a duplicate action.
+        (within 24 hours), we return the original response, not a duplicate action.
         Generate a new UUID for every new operation.
       schema:
         type: string
@@ -1396,7 +871,7 @@ components:
         correlationId:
           type: string
           format: uuid
-          description: The trace ID — include this when contacting support
+          description: The trace ID, include this when contacting support
         code:
           type: string
           description: Machine-readable error code
@@ -1492,7 +967,7 @@ components:
                 partnerId:
                   type: string
                   format: uuid
-                  description: Your unique Partner ID. Save this — you need it for all future API calls.
+                  description: Your unique Partner ID. Save this, you need it for all future API calls.
                 email:
                   type: string
                 ndprConsentAt:
@@ -1599,7 +1074,7 @@ components:
           description: Funds Transfer session ID (provided by your UBN relationship manager)
         transactionLocation:
           type: string
-          description: GPS coordinates of the transaction origin. Required for NIP transfers. Format — `latitude,longitude`
+          description: GPS coordinates of the transaction origin. Required for NIP transfers. Format, `latitude,longitude`
           example: "6.5244,3.3792"
         channelCode:
           type: string
@@ -1612,8 +1087,8 @@ components:
           description: |
             How transfer fees appear on the statement:
             - `LUMP_ALL`: One combined debit for principal + fees + VAT
-            - `LUMP_FEE_VAT` (default): Two debits — principal, then fees+VAT combined
-            - `SPLIT_FEE_VAT`: Three debits — principal, fees, and VAT separately
+            - `LUMP_FEE_VAT` (default): Two debits, principal, then fees+VAT combined
+            - `SPLIT_FEE_VAT`: Three debits, principal, fees, and VAT separately
 
     AccountEnquiryRequest:
       type: object
@@ -1753,7 +1228,7 @@ components:
 
   responses:
     BadRequest:
-      description: Bad request — check your request body against the schema
+      description: Bad request, check your request body against the schema
       content:
         application/problem+json:
           schema:
@@ -1776,7 +1251,7 @@ components:
             $ref: "#/components/schemas/ProblemDetails"
 
     Conflict:
-      description: Duplicate request — an idempotent replay was detected
+      description: Duplicate request, an idempotent replay was detected
       content:
         application/problem+json:
           schema:

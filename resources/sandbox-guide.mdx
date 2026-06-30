@@ -7,7 +7,7 @@ The sandbox is where you build. Before you can touch production, every feature i
 
 ## What Is the Sandbox?
 
-The sandbox is a complete copy of the production API that uses **fake money**. Everything works exactly the same way as production — the same endpoints, the same request formats, the same response structures, the same error codes, the same webhook events — but nothing is real.
+The sandbox is a complete copy of the production API that uses **fake money**. Everything works exactly the same way as production: the same endpoints, the same request formats, the same response structures, the same error codes, the same webhook events. But nothing is real.
 
 You can:
 - Create virtual accounts
@@ -20,11 +20,11 @@ None of it costs anything. No real money moves. No real identities are verified.
 
 **Sandbox base URL:**
 ```
-https://dev-api.onecluster.co
+https://api-partner.onecluster.co
 ```
 
 <Info>
-  Your sandbox API key only works with the sandbox base URL. Your production API key only works with the production base URL (`https://api.onecluster.co`). There is no way to mix them up accidentally — the wrong key will receive a `401 Unauthorized` response.
+  Your sandbox API key only works with the sandbox base URL. Your production API key only works with the production base URL (`https://api.onecluster.co`). There is no way to mix them up accidentally: the wrong key receives a `401 Unauthorized` response.
 </Info>
 
 ---
@@ -33,7 +33,7 @@ https://dev-api.onecluster.co
 
 <CardGroup cols={2}>
   <Card title="Same API, same responses" icon="copy">
-    Every endpoint, request format, response schema, and error code is identical to production. Code that works in sandbox works in production — just swap the base URL and key.
+    Every endpoint, request format, response schema, and error code is identical to production. Code that works in sandbox works in production. Just swap the base URL and key.
   </Card>
   <Card title="Fake money" icon="coins">
     No real transfers happen. Virtual accounts have balances you can manipulate freely. No fees, no charges, no limits on how many test transactions you run.
@@ -42,7 +42,7 @@ https://dev-api.onecluster.co
     Sandbox access is free for all registered partners. There are no costs during development, regardless of how many calls you make.
   </Card>
   <Card title="Outbox preview" icon="envelope-open">
-    See the emails and SMS messages we would have sent to your customers — without needing a real email server or phone number.
+    See the emails and SMS messages we would have sent to your customers, without needing a real email server or phone number.
   </Card>
 </CardGroup>
 
@@ -50,13 +50,13 @@ https://dev-api.onecluster.co
 
 In production, when a customer completes an action (like a successful transfer), we send them an email or SMS notification. In the sandbox, those notifications go to the **outbox preview** instead of a real inbox.
 
-This means you can test the full notification flow — including email verification during onboarding — without setting up a real email server or using real phone numbers.
+This means you can test the full notification flow, including email verification during onboarding, without setting up a real email server or using real phone numbers.
 
 ```
 GET /dev/outbox-preview
 ```
 
-Returns the last 50 emails and SMS messages that would have been sent. Each entry includes the recipient, subject, and full message body. This is particularly useful for grabbing email verification codes during automated testing.
+Returns the last 50 emails and SMS messages that would have been sent. Each entry includes the recipient, subject, and full message body. Particularly useful for grabbing email verification codes during automated testing.
 
 <Tip>
   In your test automation, call `GET /dev/outbox-preview` after triggering an email verification flow to extract the OTP code programmatically. This lets you write fully automated end-to-end tests without manual steps.
@@ -69,7 +69,7 @@ Returns the last 50 emails and SMS messages that would have been sent. Each entr
 Use the following values when making API calls in the sandbox. These are pre-configured to return predictable, successful responses.
 
 <AccordionGroup>
-  <Accordion title="KYC — BVN Verification">
+  <Accordion title="KYC: BVN Verification">
     Use any 11-digit number starting with `222`.
 
     ```
@@ -78,10 +78,10 @@ Use the following values when making API calls in the sandbox. These are pre-con
     22200000001
     ```
 
-    These will always return a successful BVN match. Numbers that do not start with `222` will return a `not found` response — useful for testing your error handling.
+    These always return a successful BVN match. Numbers that do not start with `222` return a `not found` response, useful for testing your error handling.
   </Accordion>
 
-  <Accordion title="KYC — NIN Verification">
+  <Accordion title="KYC: NIN Verification">
     Use any 11-digit number starting with `123`.
 
     ```
@@ -90,10 +90,10 @@ Use the following values when making API calls in the sandbox. These are pre-con
     12300000001
     ```
 
-    These will always return a successful NIN match. Numbers not starting with `123` return `not found`.
+    These always return a successful NIN match. Numbers not starting with `123` return `not found`.
   </Accordion>
 
-  <Accordion title="KYB — CAC Number">
+  <Accordion title="KYB: CAC Number">
     Use `RC-1234567` to get a company that always returns `ACTIVE` status with full director information.
 
     ```
@@ -103,7 +103,7 @@ Use the following values when making API calls in the sandbox. These are pre-con
     To test an `INACTIVE` company response, use `RC-9999999`.
   </Accordion>
 
-  <Accordion title="Payments — Account Enquiry & Transfers">
+  <Accordion title="Payments: Account Enquiry & Transfers">
     Use the following account details for transfer testing:
 
     | Field | Value |
@@ -119,7 +119,7 @@ Use the following values when making API calls in the sandbox. These are pre-con
 </AccordionGroup>
 
 <Warning>
-  Do not use real BVN, NIN, or account numbers in the sandbox. The sandbox does not connect to live identity databases, so real numbers will simply return "not found" — but you should still treat identity data with care and avoid putting real PII into test systems.
+  Do not use real BVN, NIN, or account numbers in the sandbox. The sandbox does not connect to live identity databases, so real numbers will simply return "not found". You should still treat identity data with care and avoid putting real PII into test systems.
 </Warning>
 
 ---
@@ -189,7 +189,7 @@ When you develop locally (on your laptop or a development machine), your applica
 </Steps>
 
 <Warning>
-  The ngrok URL changes every time you restart ngrok (on the free plan). When you restart your tunnel, update your webhook URL in the sandbox portal to match the new URL.
+  On the free plan, the ngrok URL changes every time you restart ngrok. When you restart your tunnel, update your webhook URL in the sandbox portal to match the new URL.
 </Warning>
 
 ---
@@ -198,7 +198,7 @@ When you develop locally (on your laptop or a development machine), your applica
 
 When your integration is ready, switching to production is a two-step change:
 
-1. **Change the base URL** from `https://dev-api.onecluster.co` to `https://api.onecluster.co`.
+1. **Change the base URL** from `https://api-partner.onecluster.co` to `https://api.onecluster.co`.
 2. **Change your API key** from your sandbox key to your production key (obtained after go-live approval).
 
 No code changes are required. The API is identical between environments.

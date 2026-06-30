@@ -19,7 +19,7 @@ The Payments API lets your platform move money out of a virtual account to any b
 
 | Environment | Base URL |
 |-------------|----------|
-| Sandbox | `https://dev-api.onecluster.co` |
+| Sandbox | `https://api-partner.onecluster.co` |
 | Production | `https://api.onecluster.co` |
 
 ---
@@ -67,7 +67,7 @@ Sends money from one of your virtual accounts to any Nigerian bank account.
 | `beneficiary_bank_code` | string | Yes | 3-digit CBN bank code for the destination bank |
 | `beneficiary_name` | string | Yes | Full name of the account holder at the destination bank |
 | `narration` | string | No | Description that appears on the beneficiary's bank statement (max 50 characters) |
-| `reference` | string | No | Your internal reference for this payment — returned in webhooks |
+| `reference` | string | No | Your internal reference for this payment, returned in webhooks |
 | `metadata` | object | No | Any key-value pairs for your own records |
 
 **What you get back:**
@@ -132,7 +132,7 @@ Check the current status of a payment. Poll this endpoint if you do not use webh
 | `pending` | Payment queued, not yet submitted to NIP |
 | `processing` | Submitted to the NIP network |
 | `completed` | Beneficiary account credited |
-| `failed` | Transfer unsuccessful — see `failure_reason` |
+| `failed` | Transfer unsuccessful. See `failure_reason` |
 | `reversed` | Payment was reversed after initial completion |
 
 ---
@@ -147,10 +147,10 @@ Returns a paginated list of all payments made from your business accounts.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `from` | string | — | Start date `YYYY-MM-DD` |
-| `to` | string | — | End date `YYYY-MM-DD` |
+| `from` | string | none | Start date `YYYY-MM-DD` |
+| `to` | string | none | End date `YYYY-MM-DD` |
 | `status` | string | all | Filter by payment status |
-| `source_account_id` | string | — | Return only payments from this account |
+| `source_account_id` | string | none | Return only payments from this account |
 | `page` | integer | `1` | Page number |
 | `per_page` | integer | `20` | Results per page (max 100) |
 
@@ -160,7 +160,7 @@ Returns a paginated list of all payments made from your business accounts.
 
 `POST /v1/payments/{payment_id}/reverse`
 
-Request a reversal of a completed payment. Reversals are not guaranteed — if the beneficiary bank has already credited the account and the funds have been spent, reversal may fail.
+Request a reversal of a completed payment. Reversals are not guaranteed: if the beneficiary bank has already credited the account and the funds have been spent, reversal may fail.
 
 **What you send:**
 
@@ -243,10 +243,10 @@ The timestamp must be within **5 minutes** of the server clock. Requests with ol
 | 400 | `VALIDATION_ERROR` | Missing or invalid fields |
 | 402 | `INSUFFICIENT_BALANCE` | Source account does not have enough funds |
 | 404 | `ACCOUNT_NOT_FOUND` | Source account ID does not exist |
-| 409 | `DUPLICATE_PAYMENT` | Idempotency key already used — returning original result |
+| 409 | `DUPLICATE_PAYMENT` | Idempotency key already used, returning original result |
 | 422 | `INVALID_BANK_ACCOUNT` | Beneficiary account not found or inactive |
-| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests — see [Rate Limits](/security/rate-limits) |
-| 503 | `NIP_UNAVAILABLE` | Inter-bank network temporarily unavailable — retry |
+| 429 | `RATE_LIMIT_EXCEEDED` | Too many requests. See [Rate Limits](/security/rate-limits) |
+| 503 | `NIP_UNAVAILABLE` | Inter-bank network temporarily unavailable. Retry |
 
 ---
 
